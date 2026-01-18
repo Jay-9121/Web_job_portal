@@ -53,19 +53,16 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!validate()) return;
 
     try {
-      const dataToSubmit = {
+      const response = await createUserApi({
         username: formData.username,
         email: formData.email,
         password: formData.password
-      };
+      });
 
-      const response = await createUserApi(dataToSubmit);
-
-      if (response.data.success) {
+      if (response?.data?.success) {
         toast.success(response?.data?.message || "Registration successful");
         setFormData({
           username: "",
@@ -77,31 +74,19 @@ const Register = () => {
         toast.error("Something went wrong");
       }
     } catch (error) {
-  // Show user-friendly toast
-  toast.error(
-    error.response?.data?.message || error.message || "Server error. Try again later."
-  );
-
-  // Log full error safely
-  if (error.response) {
-    // Server responded with a status code outside 2xx
-    console.error("Response data:", error.response.data);
-    console.error("Response status:", error.response.status);
-    console.error("Response headers:", error.response.headers);
-  } else if (error.request) {
-    // Request was made but no response received
-    console.error("No response received:", error.request);
-  } else {
-    // Something else triggered the error
-    console.error("Error:", error.message);
-  }}
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Server error. Try again later."
+      );
+    }
   };
 
   return (
     <div style={styles.container}>
       <form onSubmit={handleSubmit} style={styles.form}>
-        <h2 style={styles.title}>Create your account</h2>
-        <p style={styles.subtitle}>Join us and get started</p>
+        <h2 style={styles.title}>Create account</h2>
+        <p style={styles.subtitle}>Sign up to get started</p>
 
         <input
           type="text"
@@ -109,7 +94,6 @@ const Register = () => {
           placeholder="Username"
           value={formData.username}
           onChange={handleChange}
-          required
           style={styles.input}
         />
 
@@ -119,7 +103,6 @@ const Register = () => {
           placeholder="Email address"
           value={formData.email}
           onChange={handleChange}
-          required
           style={styles.input}
         />
 
@@ -129,7 +112,6 @@ const Register = () => {
           placeholder="Password"
           value={formData.password}
           onChange={handleChange}
-          required
           style={styles.input}
         />
 
@@ -139,7 +121,6 @@ const Register = () => {
           placeholder="Confirm password"
           value={formData.confirmPassword}
           onChange={handleChange}
-          required
           style={styles.input}
         />
 
@@ -157,23 +138,23 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "linear-gradient(135deg, #020617, #0f172a)"
+    background: "linear-gradient(135deg, #3b2f2f, #1f1b1b)"
   },
   form: {
     width: "360px",
     padding: "32px",
     borderRadius: "16px",
-    background: "#020617",
-    boxShadow: "0 20px 40px rgba(0,0,0,0.6)"
+    background: "#2a2420",
+    boxShadow: "0 18px 40px rgba(0,0,0,0.6)"
   },
   title: {
-    color: "#f8fafc",
+    color: "#f5f5f4",
     textAlign: "center",
     marginBottom: "6px",
     fontSize: "22px"
   },
   subtitle: {
-    color: "#94a3b8",
+    color: "#d6d3d1",
     textAlign: "center",
     marginBottom: "22px",
     fontSize: "14px"
@@ -183,19 +164,18 @@ const styles = {
     padding: "13px",
     marginBottom: "14px",
     borderRadius: "10px",
-    border: "1px solid #334155",
-    background: "#020617",
-    color: "#e5e7eb",
-    outline: "none",
-    transition: "border 0.2s ease"
+    border: "1px solid #7c6f64",
+    background: "#1f1b1b",
+    color: "#f5f5f4",
+    outline: "none"
   },
   button: {
     width: "100%",
     padding: "13px",
     borderRadius: "10px",
     border: "none",
-    background: "linear-gradient(135deg, #38bdf8, #0ea5e9)",
-    color: "#020617",
+    background: "linear-gradient(135deg, #a16207, #92400e)",
+    color: "#fafaf9",
     fontWeight: "bold",
     fontSize: "15px",
     cursor: "pointer",

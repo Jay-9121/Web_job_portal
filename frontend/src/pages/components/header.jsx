@@ -1,56 +1,20 @@
-import { useState } from "react";
+import React from 'react';
+import { Link }  from 'react-router-dom';
 
-const Login = () => {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: ""
-  });
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault(); 
-    console.log("Login data:", formData);
-
-   
-  };
-
+const Headers = () => {
   return (
-    <div>
-      <h2>Login</h2>
-
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email</label><br />
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div>
-          <label>Password</label><br />
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <button type="submit">Login</button>
-      </form>
+    <div style={{
+      padding: '10px',
+      backgroundColor: '#f5f5f5',
+      textAlign: 'center',
+      fontWeight: 'bold'
+    }}>
+      <button className='p-2 bg-red-400 m-2 rounded-lg text-white capitalize '>home</button>
+      <button className='p-2 bg-red-400 m-2 rounded-lg text-white capitalize'>about</button>
+      <Link to={"/login"} className='p-2 bg-red-400 m-2 rounded-lg text-white capitalize hover:bg-red-600'>login</Link>
+      <Link to={"/register"} className='p-2 bg-red-400 m-2 rounded-lg text-white capitalize hover:bg-red-600'>register</Link>
     </div>
   );
 };
 
-export default Login;
+export default Headers;
