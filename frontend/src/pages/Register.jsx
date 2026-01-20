@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { createUserApi } from "../services/api";
 
 const Register = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -22,32 +24,26 @@ const Register = () => {
       toast.error("Username is required");
       return false;
     }
-
     if (!formData.email.trim()) {
       toast.error("Email is required");
       return false;
     }
-
     if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
       toast.error("Invalid email address");
       return false;
     }
-
     if (!formData.password) {
       toast.error("Password is required");
       return false;
     }
-
     if (formData.password.length < 6) {
       toast.error("Password must be at least 6 characters");
       return false;
     }
-
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match");
       return false;
     }
-
     return true;
   };
 
@@ -64,14 +60,19 @@ const Register = () => {
 
       if (response?.data?.success) {
         toast.success(response?.data?.message || "Registration successful");
+
+        // reset form
         setFormData({
           username: "",
           email: "",
           password: "",
           confirmPassword: ""
         });
+
+        // redirect to login page
+        navigate("/login");
       } else {
-        toast.error("Something went wrong");
+        toast.error(response?.data?.message || "Something went wrong");
       }
     } catch (error) {
       toast.error(
@@ -96,7 +97,6 @@ const Register = () => {
           onChange={handleChange}
           style={styles.input}
         />
-
         <input
           type="email"
           name="email"
@@ -105,7 +105,6 @@ const Register = () => {
           onChange={handleChange}
           style={styles.input}
         />
-
         <input
           type="password"
           name="password"
@@ -114,7 +113,6 @@ const Register = () => {
           onChange={handleChange}
           style={styles.input}
         />
-
         <input
           type="password"
           name="confirmPassword"
@@ -124,14 +122,23 @@ const Register = () => {
           style={styles.input}
         />
 
-        <button type="submit" style={styles.button}>
-          Register
-        </button>
+        <button type="submit" style={styles.button}>Register</button>
+
+        <p style={styles.switchText}>
+          Already have an account?{" "}
+          <span
+            style={styles.switchLink}
+            onClick={() => navigate("/login")}
+          >
+            Login
+          </span>
+        </p>
       </form>
     </div>
   );
 };
 
+// Styles object
 const styles = {
   container: {
     height: "100vh",
@@ -180,6 +187,17 @@ const styles = {
     fontSize: "15px",
     cursor: "pointer",
     marginTop: "6px"
+  },
+  switchText: {
+    color: "#d6d3d1",
+    textAlign: "center",
+    marginTop: "12px",
+    fontSize: "14px"
+  },
+  switchLink: {
+    color: "#fbbf24",
+    cursor: "pointer",
+    fontWeight: "bold"
   }
 };
 

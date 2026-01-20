@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // navigation hook
 import toast from "react-hot-toast";
-import { loginUserApi } from "../services/api";
+import { loginUserApi } from "../services/api"; // your login API call
 
 const Login = () => {
+  const navigate = useNavigate(); // navigation
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -20,6 +22,10 @@ const Login = () => {
       toast.error("Email is required");
       return false;
     }
+    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      toast.error("Invalid email address");
+      return false;
+    }
     if (!formData.password) {
       toast.error("Password is required");
       return false;
@@ -32,29 +38,36 @@ const Login = () => {
     if (!validate()) return;
 
     try {
-      const response = await loginUserApi(formData);
+      const response = await loginUserApi({
+        email: formData.email,
+        password: formData.password
+      });
 
       if (response?.data?.success) {
-        // ✅ Success case
-        toast.success(response.data.message || "Login successful");
-        localStorage.setItem("token", response.data.token); // store JWT
-        // You can redirect the user after login
-        // e.g., navigate("/dashboard");
+        toast.success(response?.data?.message || "Login successful");
+
+        // Save token in localStorage or context
+        localStorage.setItem("token", response.data.token);
+
+        // Redirect to dashboard
+        navigate("/dashboard");
       } else {
-        // ❌ Backend returned success: false
-        toast.error(response.data.message || "Login failed");
+        toast.error(response?.data?.message || "Invalid credentials");
       }
     } catch (error) {
-      // Network or server error
-      toast.error(error.response?.data?.message || "Login failed");
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Server error. Try again later."
+      );
     }
   };
 
   return (
     <div style={styles.container}>
       <form onSubmit={handleSubmit} style={styles.form}>
-        <h2 style={styles.title}>Welcome back</h2>
-        <p style={styles.subtitle}>Sign in to continue</p>
+        <h2 style={styles.title}>Login</h2>
+        <p style={styles.subtitle}>Enter your credentials</p>
 
         <input
           type="email"
@@ -64,7 +77,6 @@ const Login = () => {
           onChange={handleChange}
           style={styles.input}
         />
-
         <input
           type="password"
           name="password"
@@ -77,6 +89,16 @@ const Login = () => {
         <button type="submit" style={styles.button}>
           Login
         </button>
+
+        <p style={styles.switchText}>
+          Don’t have an account?{" "}
+          <span
+            style={styles.switchLink}
+            onClick={() => navigate("/register")} // go to register
+          >
+            Register
+          </span>
+        </p>
       </form>
     </div>
   );
@@ -130,6 +152,17 @@ const styles = {
     fontSize: "15px",
     cursor: "pointer",
     marginTop: "6px"
+  },
+  switchText: {
+    color: "#d6d3d1",
+    textAlign: "center",
+    marginTop: "12px",
+    fontSize: "14px"
+  },
+  switchLink: {
+    color: "#fbbf24",
+    cursor: "pointer",
+    fontWeight: "bold"
   }
 };
 
