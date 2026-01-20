@@ -21,7 +21,7 @@ export const createUserApi = (data) =>
   Api.post("/api/user/register", data);
 
 export const loginUserApi = (data) =>
-  Api.post("/api/user/login", data);
+  Api.post("/api/user/loginuser", data);
 
 export const getUser = () =>
   Api.get("/api/user/getallusers");
