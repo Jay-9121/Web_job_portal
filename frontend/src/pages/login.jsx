@@ -1,7 +1,5 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
-import axios from "axios";
-import { jwtDecode } from "jwt-decode";
 import { loginUserApi } from "../services/api";
 
 const Login = () => {
@@ -22,12 +20,10 @@ const Login = () => {
       toast.error("Email is required");
       return false;
     }
-
     if (!formData.password) {
       toast.error("Password is required");
       return false;
     }
-
     return true;
   };
 
@@ -37,14 +33,20 @@ const Login = () => {
 
     try {
       const response = await loginUserApi(formData);
+
       if (response?.data?.success) {
-        return toast.error(response?.data?.message);
+        // ✅ Success case
+        toast.success(response.data.message || "Login successful");
+        localStorage.setItem("token", response.data.token); // store JWT
+        // You can redirect the user after login
+        // e.g., navigate("/dashboard");
+      } else {
+        // ❌ Backend returned success: false
+        toast.error(response.data.message || "Login failed");
       }
-      toast.success(response?.data?.message);
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Login failed"
-      );
+      // Network or server error
+      toast.error(error.response?.data?.message || "Login failed");
     }
   };
 
