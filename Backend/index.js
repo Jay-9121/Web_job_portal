@@ -1,26 +1,30 @@
-const express = require('express');
+const express = require("express");
+const cors = require("cors");
 const app = express();
-const {connectDB, sequelize} = require('./database/database');
+
+const { connectDB, sequelize } = require("./database/database");
+
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
 
 app.use(express.json());
-app.use("/api/user/", require("./routes/route"));
 
-app.get('/', (req, res) => {
-    res.json('Welcome to the home page');
+app.use("/api/user", require("./routes/route"));
+app.use("/api/product", require("./routes/productRoute"));
+
+app.get("/", (req, res) => {
+  res.json("Welcome to the home page");
 });
 
-app.use("/api/product/",require('./routes/productRoute'))
-
-
-// app.listen(3000, () => {
-//     console.log('Server is running on http://localhost:3000');
-// });
-
 const startServer = async () => {
-    await connectDB();
-    await sequelize.sync({ alter: true }); // Sync models with the database
-    app.listen(3000, () => {
-        console.log('Server is running on http://localhost:3000');
-    });
-}
+  await connectDB();
+  await sequelize.sync({ alter: true });
+
+  app.listen(3000, () => {
+    console.log("Server running on http://localhost:3000");
+  });
+};
+
 startServer();

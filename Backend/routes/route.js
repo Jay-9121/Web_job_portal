@@ -11,12 +11,12 @@ const {
   loginUser
 } = require("../controllers/userController");
 
-express.post("/user", upload.none(), addUser);
+express.post("/register", upload.none(), addUser);
 express.get("/getalluser", getAllUsers);
 express.get("/getusersbyid/:id", getUsersById);
 express.put("/updateuserbyid/:id", updateUser);
 express.delete("/deleteuserbyid/:id", deleteUser);
 express.post("/loginuser", loginUser);
 
-
 module.exports=express;
+    
