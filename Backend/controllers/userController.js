@@ -43,7 +43,7 @@ const addUser = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const user = await User.findAll({ attributes: { exclude: ["password"] } })
-    return res.json({ success:true,user, message: "User fetched successfully" })
+    return res.json({ success: true, users: user, message: "Users fetched successfully" })
   } catch (error) {
     return res.status(500).json({
       message: "Error fetching users",
