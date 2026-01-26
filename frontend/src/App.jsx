@@ -2,9 +2,9 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import { Toaster } from "react-hot-toast";
 import Register from "./pages/Register";
-import Login from "./pages/Login";
 import EditUser from "./pages/EditUser";
 import Dashboard from "./pages/Dashboard";
+import Login from "./pages/login";
 
 function App() {
   return (
