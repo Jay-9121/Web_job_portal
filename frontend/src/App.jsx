@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import EditUser from "./pages/EditUser";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/login";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/edit-user/:id" element={<EditUser />} />
         <Route path="/dashboard" element={<Dashboard />} />
+         <Route path="/admindashboard" element={<AdminDashboard />} />
       </Routes>
     </Router>
   );

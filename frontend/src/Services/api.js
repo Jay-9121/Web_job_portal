@@ -20,8 +20,9 @@ const Api = axios.create({
 export const createUserApi = (data) =>
   Api.post("/api/user/register", data);
 
+// Change /loginuser to /login (or whatever matches your backend router)
 export const loginUserApi = (data) =>
-  Api.post("/api/user/loginuser", data);
+  Api.post("/api/user/login", data);
 
 export const getUser = () =>
   Api.get("/api/user/getallusers");

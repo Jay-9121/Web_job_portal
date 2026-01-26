@@ -1,20 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // navigation hook
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { loginUserApi } from "../services/api"; // your login API call
+import { loginUserApi } from "../services/api";
 
 const Login = () => {
-  const navigate = useNavigate(); // navigation
-  const [formData, setFormData] = useState({
-    email: "",
-    password: ""
-  });
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({ email: "", password: "" });
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const validate = () => {
@@ -38,36 +32,51 @@ const Login = () => {
     if (!validate()) return;
 
     try {
-      const response = await loginUserApi({
-        email: formData.email,
-        password: formData.password
-      });
+      // Sending data to backend
+      const response = await loginUserApi(formData);
 
       if (response?.data?.success) {
+        // Extract token and user data from response
+        const { token, user } = response.data;
+
+        // 1. Save credentials to LocalStorage
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user)); 
+
         toast.success(response?.data?.message || "Login successful");
 
-        // Save token in localStorage or context
-        localStorage.setItem("token", response.data.token);
-
-        // Redirect to dashboard
-        navigate("/dashboard");
+        // 2. ROLE-BASED REDIRECTION
+        // This separates the Admin and User experiences immediately
+        if (user.role === "admin") {
+          toast.success(`Access Granted: Admin ${user.username}`);
+          navigate("/admindashboard"); 
+        } else {
+          toast.success(`Welcome back, ${user.username}`);
+          navigate("/dashboard");
+        }
       } else {
         toast.error(response?.data?.message || "Invalid credentials");
       }
     } catch (error) {
+      console.error("Login Error Details:", error.response?.data);
       toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          "Server error. Try again later."
+        error.response?.data?.message || "Server error. Try again later."
       );
     }
   };
 
   return (
-    <div style={styles.container}>
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <h2 style={styles.title}>Login</h2>
-        <p style={styles.subtitle}>Enter your credentials</p>
+    <div className="h-screen flex justify-center items-center bg-linear-to-br from-[#3b2f2f] to-[#1f1b1b]">
+      <form
+        onSubmit={handleSubmit}
+        className="w-90 p-8 rounded-2xl bg-[#2a2420] shadow-[0_18px_40px_rgba(0,0,0,0.6)]"
+      >
+        <h2 className="text-[#f5f5f4] text-center mb-1 text-2xl font-bold">
+          Login
+        </h2>
+        <p className="text-[#d6d3d1] text-center mb-6 text-sm">
+          Enter your credentials
+        </p>
 
         <input
           type="email"
@@ -75,7 +84,7 @@ const Login = () => {
           placeholder="Email address"
           value={formData.email}
           onChange={handleChange}
-          style={styles.input}
+          className="w-full p-3 mb-4 rounded-xl border border-[#7c6f64] bg-[#1f1b1b] text-[#f5f5f4] outline-hidden focus:ring-2 focus:ring-[#a16207] transition-all"
         />
         <input
           type="password"
@@ -83,18 +92,21 @@ const Login = () => {
           placeholder="Password"
           value={formData.password}
           onChange={handleChange}
-          style={styles.input}
+          className="w-full p-3 mb-4 rounded-xl border border-[#7c6f64] bg-[#1f1b1b] text-[#f5f5f4] outline-hidden focus:ring-2 focus:ring-[#a16207] transition-all"
         />
 
-        <button type="submit" style={styles.button}>
+        <button
+          type="submit"
+          className="w-full p-3 rounded-xl bg-linear-to-r from-[#a16207] to-[#92400e] text-[#fafaf9] font-bold text-base cursor-pointer mt-2 hover:brightness-110 transition-all active:scale-95"
+        >
           Login
         </button>
 
-        <p style={styles.switchText}>
+        <p className="text-[#d6d3d1] text-center mt-4 text-sm">
           Don’t have an account?{" "}
           <span
-            style={styles.switchLink}
-            onClick={() => navigate("/register")} // go to register
+            className="text-[#fbbf24] cursor-pointer font-bold hover:underline"
+            onClick={() => navigate("/register")}
           >
             Register
           </span>
@@ -102,68 +114,6 @@ const Login = () => {
       </form>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    height: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "linear-gradient(135deg, #3b2f2f, #1f1b1b)"
-  },
-  form: {
-    width: "360px",
-    padding: "32px",
-    borderRadius: "16px",
-    background: "#2a2420",
-    boxShadow: "0 18px 40px rgba(0,0,0,0.6)"
-  },
-  title: {
-    color: "#f5f5f4",
-    textAlign: "center",
-    marginBottom: "6px",
-    fontSize: "22px"
-  },
-  subtitle: {
-    color: "#d6d3d1",
-    textAlign: "center",
-    marginBottom: "22px",
-    fontSize: "14px"
-  },
-  input: {
-    width: "100%",
-    padding: "13px",
-    marginBottom: "14px",
-    borderRadius: "10px",
-    border: "1px solid #7c6f64",
-    background: "#1f1b1b",
-    color: "#f5f5f4",
-    outline: "none"
-  },
-  button: {
-    width: "100%",
-    padding: "13px",
-    borderRadius: "10px",
-    border: "none",
-    background: "linear-gradient(135deg, #a16207, #92400e)",
-    color: "#fafaf9",
-    fontWeight: "bold",
-    fontSize: "15px",
-    cursor: "pointer",
-    marginTop: "6px"
-  },
-  switchText: {
-    color: "#d6d3d1",
-    textAlign: "center",
-    marginTop: "12px",
-    fontSize: "14px"
-  },
-  switchLink: {
-    color: "#fbbf24",
-    cursor: "pointer",
-    fontWeight: "bold"
-  }
 };
 
 export default Login;
