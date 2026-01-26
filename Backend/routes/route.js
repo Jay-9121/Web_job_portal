@@ -13,12 +13,12 @@ const {
   getMe
 } = require("../controllers/userController");
 
-express.post("/register", upload.none(), addUser);
+express.post("/register", addUser);
 express.get("/getalluser", getAllUsers);
 express.get("/getusersbyid/:id", getUsersById);
 express.put("/updateuserbyid/:id", updateUser);
 express.delete("/deleteuserbyid/:id", deleteUser);
-express.post("/loginuser", loginUser);
+express.post("/login", loginUser);
 express.get("/getme", authGuard, getMe)
 
 
