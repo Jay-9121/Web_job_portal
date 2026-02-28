@@ -1,10 +1,11 @@
 const isAdmin = (req, res, next) => {
-    console.log(req.user)
-    if (req.user && req.user.role === 'admin') {
-        return next();
+    if (!req.user || req.user.role !== 'admin') {
+        return res.status(403).json({ 
+            success: false,
+            message: 'Access denied. Admin privileges required.' 
+        });
     }
-    return res.status(403).json({ success: false,
-        message: 'Access denied: Admins only' });
+    next();
 };
- 
+
 module.exports = isAdmin;
