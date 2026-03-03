@@ -243,6 +243,13 @@ export const getMyCompany = () => API.get("/companies/profile/me");
 
 export const getCompanyStats = () => API.get("/companies/stats/overview");
 
+// Company approval API calls (admin)
+export const approveCompany = (companyId) => 
+  API.patch(`/companies/${companyId}/approve`);
+
+export const rejectCompany = (companyId) => 
+  API.patch(`/companies/${companyId}/reject`);
+
 // Application API calls
 export const submitApplication = (applicationData) => {
   // If applicationData is FormData (for file uploads), don't set Content-Type

@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from "react";
 import AdminNav from "../components/AdminNav";
+import AdminSetting from "./AdminSetting";
 import {
   Users,
   Briefcase,
   Building2,
   FileText,
   BarChart2,
-  TrendingUp,
   ArrowUpRight,
   Bell,
   CheckCircle,
   XCircle,
   Clock,
-  Eye,
   Settings,
   Plus,
   X,
@@ -27,6 +26,15 @@ import {
   getAllApplications,
   createJob,
   getMe,
+  getAllUsers,
+  getAllJobs,
+  getAllCompanies,
+  deleteUser,
+  deleteJob,
+  approveCompany,
+  rejectCompany,
+  deleteCompany,
+  updateApplicationStatus,
 } from "../../services/api";
 import { getInitials } from "../../helpers/getInitials";
 import { useTheme } from "../../context/ThemeContext";
@@ -105,6 +113,19 @@ const AdminDashboard = ({ onLogout }) => {
   const [recentBookings, setRecentBookings] = useState([]);
   const [recentReviews, setRecentReviews] = useState([]);
   const [loadingPlatformStats, setLoadingPlatformStats] = useState(false);
+
+  // Users, Jobs, Companies management state
+  const [usersList, setUsersList] = useState([]);
+  const [jobsList, setJobsList] = useState([]);
+  const [companiesList, setCompaniesList] = useState([]);
+  const [applicationsList, setApplicationsList] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loadingJobs, setLoadingJobs] = useState(false);
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [loadingApplications, setLoadingApplications] = useState(false);
+  const [processingCompany, setProcessingCompany] = useState(null);
+  const [processingApplication, setProcessingApplication] = useState(null);
+  const [applicationFilter, setApplicationFilter] = useState("all");
 
   useEffect(() => {
     document.title = `Admin - ${activeTab}`;
@@ -284,6 +305,170 @@ const AdminDashboard = ({ onLogout }) => {
       setJobSubmitting(false);
     }
   };
+
+  // Fetch users for Users tab
+  const fetchUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const response = await getAllUsers();
+      if (response.data.success) {
+        setUsersList(response.data.users || []);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast.error("Failed to load users");
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Fetch jobs for Jobs tab
+  const fetchJobs = async () => {
+    try {
+      setLoadingJobs(true);
+      const response = await getAllJobs({ page: 1, limit: 50 });
+      if (response.data.success) {
+        setJobsList(response.data.jobs || []);
+      }
+    } catch (error) {
+      console.error("Error fetching jobs:", error);
+      toast.error("Failed to load jobs");
+    } finally {
+      setLoadingJobs(false);
+    }
+  };
+
+  // Fetch companies for Companies tab
+  const fetchCompanies = async () => {
+    try {
+      setLoadingCompanies(true);
+      const response = await getAllCompanies({ page: 1, limit: 50 });
+      if (response.data.success) {
+        setCompaniesList(response.data.companies || []);
+      }
+    } catch (error) {
+      console.error("Error fetching companies:", error);
+      toast.error("Failed to load companies");
+    } finally {
+      setLoadingCompanies(false);
+    }
+  };
+
+  // Fetch all applications for Applications tab
+  const fetchApplications = async () => {
+    try {
+      setLoadingApplications(true);
+      const response = await getAllApplications({ page: 1, limit: 100 });
+      if (response.data.success) {
+        setApplicationsList(response.data.applications || []);
+      }
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+      toast.error("Failed to load applications");
+    } finally {
+      setLoadingApplications(false);
+    }
+  };
+
+  // Handle delete user
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
+    
+    try {
+      await deleteUser(userId);
+      toast.success("User deleted successfully");
+      fetchUsers();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.error("Failed to delete user");
+    }
+  };
+
+  // Handle delete job
+  const handleDeleteJob = async (jobId) => {
+    if (!window.confirm("Are you sure you want to delete this job?")) return;
+    
+    try {
+      await deleteJob(jobId);
+      toast.success("Job deleted successfully");
+      fetchJobs();
+    } catch (error) {
+      console.error("Error deleting job:", error);
+      toast.error("Failed to delete job");
+    }
+  };
+
+  // Handle approve company
+  const handleApproveCompany = async (companyId) => {
+    try {
+      setProcessingCompany(companyId);
+      await approveCompany(companyId);
+      toast.success("Company approved successfully");
+      fetchCompanies();
+    } catch (error) {
+      console.error("Error approving company:", error);
+      toast.error("Failed to approve company");
+    } finally {
+      setProcessingCompany(null);
+    }
+  };
+
+  // Handle reject company
+  const handleRejectCompany = async (companyId) => {
+    try {
+      setProcessingCompany(companyId);
+      await rejectCompany(companyId);
+      toast.success("Company rejected");
+      fetchCompanies();
+    } catch (error) {
+      console.error("Error rejecting company:", error);
+      toast.error("Failed to reject company");
+    } finally {
+      setProcessingCompany(null);
+    }
+  };
+
+  // Handle delete company
+  const handleDeleteCompany = async (companyId) => {
+    if (!window.confirm("Are you sure you want to delete this company?")) return;
+    
+    try {
+      await deleteCompany(companyId);
+      toast.success("Company deleted successfully");
+      fetchCompanies();
+    } catch (error) {
+      console.error("Error deleting company:", error);
+      toast.error("Failed to delete company");
+    }
+  };
+
+  // Handle update application status
+  const handleUpdateApplicationStatus = async (applicationId, newStatus) => {
+    try {
+      setProcessingApplication(applicationId);
+      await updateApplicationStatus(applicationId, newStatus);
+      toast.success(`Application ${newStatus} successfully`);
+      fetchApplications();
+    } catch (error) {
+      console.error("Error updating application status:", error);
+      toast.error("Failed to update application status");
+    } finally {
+      setProcessingApplication(null);
+    }
+  };
+
+  // Fetch data when switching to Users, Jobs, Companies or Applications tabs
+  useEffect(() => {
+    if (activeTab === "Users") {
+      fetchUsers();
+    } else if (activeTab === "Jobs") {
+      fetchJobs();
+    } else if (activeTab === "Companies") {
+      fetchCompanies();
+    } else if (activeTab === "Applications") {
+      fetchApplications();
+    }
+  }, [activeTab]);
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -631,70 +816,372 @@ const AdminDashboard = ({ onLogout }) => {
       }
       case "Users":
         return (
-          <Card
-            className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}
-          >
-            <h2
-              className={`text-2xl font-black mb-6 ${
-                theme === "dark" ? "text-white" : "text-gray-900"
-              }`}
-            >
-              User Management
-            </h2>
-            <p className="text-gray-500">
-              User management interface coming soon...
-            </p>
+          <Card className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className={`text-2xl font-black ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                User Management
+              </h2>
+              <span className="text-sm text-gray-500">{usersList.length} users</span>
+            </div>
+            
+            {loadingUsers ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-16 bg-gray-200 animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : usersList.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className={`text-xs uppercase border-b ${theme === "dark" ? "text-gray-400 border-slate-700" : "text-gray-400 border-gray-100"}`}>
+                      <th className="pb-3 font-semibold">User</th>
+                      <th className="pb-3 font-semibold">Email</th>
+                      <th className="pb-3 font-semibold">Role</th>
+                      <th className="pb-3 font-semibold">Joined</th>
+                      <th className="pb-3 font-semibold text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {usersList.map((userItem) => {
+                      const initials = getInitials(userItem.username || "U");
+                      return (
+                        <tr key={userItem.id} className="group hover:bg-gray-50">
+                          <td className="py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm font-bold">
+                                {initials}
+                              </div>
+                              <span className={`text-sm font-medium ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
+                                {userItem.username || "Unknown"}
+                              </span>
+                            </div>
+                          </td>
+                          <td className={`py-4 text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                            {userItem.email || "N/A"}
+                          </td>
+                          <td className="py-4">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              userItem.role === "admin" ? "bg-purple-100 text-purple-700" :
+                              userItem.role === "company" ? "bg-blue-100 text-blue-700" :
+                              "bg-gray-100 text-gray-700"
+                            }`}>
+                              {userItem.role || "user"}
+                            </span>
+                          </td>
+                          <td className={`py-4 text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                            {userItem.createdAt ? new Date(userItem.createdAt).toLocaleDateString() : "N/A"}
+                          </td>
+                          <td className="py-4 text-right">
+                            <button
+                              onClick={() => handleDeleteUser(userItem.id)}
+                              className="text-red-500 hover:text-red-700 text-sm font-medium"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">No users found</p>
+            )}
           </Card>
         );
       case "Jobs":
         return (
-          <Card
-            className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}
-          >
-            <h2
-              className={`text-2xl font-black mb-6 ${
-                theme === "dark" ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Job Management
-            </h2>
-            <p className="text-gray-500">
-              Job management interface coming soon...
-            </p>
+          <Card className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className={`text-2xl font-black ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                Job Management
+              </h2>
+              <span className="text-sm text-gray-500">{jobsList.length} jobs</span>
+            </div>
+            
+            {loadingJobs ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-20 bg-gray-200 animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : jobsList.length > 0 ? (
+              <div className="space-y-4">
+                {jobsList.map((job) => (
+                  <div key={job.id} className={`p-4 border rounded-xl ${theme === "dark" ? "border-slate-700" : "border-gray-100"}`}>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className={`font-bold text-lg ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                          {job.title}
+                        </h3>
+                        <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                          {job.location} • {job.jobType} • {job.experienceLevel || "Any level"}
+                        </p>
+                        <div className="flex gap-2 mt-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            job.status === "active" ? "bg-green-100 text-green-700" :
+                            job.status === "closed" ? "bg-red-100 text-red-700" :
+                            "bg-yellow-100 text-yellow-700"
+                          }`}>
+                            {job.status || "active"}
+                          </span>
+                          {job.companyId && (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                              Company ID: {job.companyId}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleDeleteJob(job.id)}
+                          className="px-3 py-1 text-sm text-red-500 border border-red-500 rounded-lg hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    <p className={`text-sm mt-2 line-clamp-2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                      {job.description}
+                    </p>
+                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
+                      <span className={`text-xs ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
+                        Posted: {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : "N/A"}
+                      </span>
+                      {job.vacancies && (
+                        <span className={`text-xs ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
+                          Vacancies: {job.vacancies}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">No jobs found</p>
+            )}
           </Card>
         );
       case "Companies":
         return (
-          <Card
-            className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}
-          >
-            <h2
-              className={`text-2xl font-black mb-6 ${
-                theme === "dark" ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Company Management
-            </h2>
-            <p className="text-gray-500">
-              Company management interface coming soon...
-            </p>
+          <Card className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className={`text-2xl font-black ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                Company Management
+              </h2>
+              <span className="text-sm text-gray-500">{companiesList.length} companies</span>
+            </div>
+            
+            {loadingCompanies ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-24 bg-gray-200 animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : companiesList.length > 0 ? (
+              <div className="space-y-4">
+                {companiesList.map((company) => (
+                  <div key={company.id} className={`p-4 border rounded-xl ${theme === "dark" ? "border-slate-700" : "border-gray-100"}`}>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className={`font-bold text-lg ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                          {company.companyName || company.companyName || "Unnamed Company"}
+                        </h3>
+                        <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                          {company.email}
+                        </p>
+                        <p className={`text-sm mt-1 ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                          {company.location || "No location"} • {company.industry || "No industry"}
+                        </p>
+                        <div className="flex gap-2 mt-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            company.status === "approved" ? "bg-green-100 text-green-700" :
+                            company.status === "rejected" ? "bg-red-100 text-red-700" :
+                            "bg-yellow-100 text-yellow-700"
+                          }`}>
+                            {company.status || "pending"}
+                          </span>
+                          {company.companySize && (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                              {company.companySize}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {company.status !== "approved" && (
+                          <button
+                            onClick={() => handleApproveCompany(company.id)}
+                            disabled={processingCompany === company.id}
+                            className="px-3 py-1 text-sm text-white bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50 flex items-center gap-1"
+                          >
+                            <CheckCircle size={14} />
+                            Accept
+                          </button>
+                        )}
+                        {company.status !== "rejected" && (
+                          <button
+                            onClick={() => handleRejectCompany(company.id)}
+                            disabled={processingCompany === company.id}
+                            className="px-3 py-1 text-sm text-white bg-red-500 rounded-lg hover:bg-red-600 disabled:opacity-50 flex items-center gap-1"
+                          >
+                            <XCircle size={14} />
+                            Decline
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteCompany(company.id)}
+                          className="px-3 py-1 text-sm text-red-500 border border-red-500 rounded-lg hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    {company.description && (
+                      <p className={`text-sm mt-2 line-clamp-2 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                        {company.description}
+                      </p>
+                    )}
+                    <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100">
+                      <span className={`text-xs ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
+                        Created: {company.createdAt ? new Date(company.createdAt).toLocaleDateString() : "N/A"}
+                      </span>
+                      {company.website && (
+                        <a 
+                          href={company.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs text-indigo-500 hover:underline"
+                        >
+                          Visit Website
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">No companies found</p>
+            )}
+          </Card>
+        );
+      case "Applications":
+        return (
+          <Card className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className={`text-2xl font-black ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                Application Management
+              </h2>
+              <div className="flex gap-2">
+                <select
+                  value={applicationFilter}
+                  onChange={(e) => setApplicationFilter(e.target.value)}
+                  className={`px-3 py-1 rounded-lg border ${theme === "dark" ? "bg-slate-700 border-slate-600 text-white" : "bg-white border-gray-300"}`}
+                >
+                  <option value="all">All Status</option>
+                  <option value="applied">Applied</option>
+                  <option value="shortlisted">Shortlisted</option>
+                  <option value="accepted">Accepted</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <span className="text-sm text-gray-500 self-center">
+                  {applicationsList.length} applications
+                </span>
+              </div>
+            </div>
+            
+            {loadingApplications ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-24 bg-gray-200 animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : applicationsList.length > 0 ? (
+              <div className="space-y-4">
+                {applicationsList
+                  .filter(app => applicationFilter === "all" || app.status === applicationFilter)
+                  .map((app) => (
+                  <div key={app.id} className={`p-4 border rounded-xl ${theme === "dark" ? "border-slate-700" : "border-gray-100"}`}>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm font-bold">
+                            {getInitials(app.applicant?.username || "U")}
+                          </div>
+                          <div>
+                            <h3 className={`font-bold text-lg ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                              {app.applicant?.username || "Unknown Applicant"}
+                            </h3>
+                            <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                              {app.applicant?.email || "No email"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-3">
+                          <p className={`text-sm font-medium ${theme === "dark" ? "text-indigo-400" : "text-indigo-600"}`}>
+                            Applied for: {app.Job?.title || "Unknown Job"}
+                          </p>
+                          <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
+                            Company: {app.Job?.Company?.name || "Unknown Company"}
+                          </p>
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          {getStatusBadge(app.status)}
+                          <span className={`text-xs ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
+                            Applied: {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : "N/A"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        {app.status === "applied" && (
+                          <>
+                            <button
+                              onClick={() => handleUpdateApplicationStatus(app.id, "accepted")}
+                              disabled={processingApplication === app.id}
+                              className="px-3 py-1 text-sm text-white bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50 flex items-center gap-1"
+                            >
+                              <CheckCircle size={14} />
+                              Accept
+                            </button>
+                            <button
+                              onClick={() => handleUpdateApplicationStatus(app.id, "rejected")}
+                              disabled={processingApplication === app.id}
+                              className="px-3 py-1 text-sm text-white bg-red-500 rounded-lg hover:bg-red-600 disabled:opacity-50 flex items-center gap-1"
+                            >
+                              <XCircle size={14} />
+                              Decline
+                            </button>
+                          </>
+                        )}
+                        {app.status === "applied" && (
+                          <button
+                            onClick={() => handleUpdateApplicationStatus(app.id, "shortlisted")}
+                            disabled={processingApplication === app.id}
+                            className="px-3 py-1 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                          >
+                            Shortlist
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setSelectedApplicationForDetail(app)}
+                          className="px-3 py-1 text-sm text-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-50"
+                        >
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">No applications found</p>
+            )}
           </Card>
         );
       case "Settings":
-        return (
-          <Card
-            className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}
-          >
-            <h2
-              className={`text-2xl font-black mb-6 ${
-                theme === "dark" ? "text-white" : "text-gray-900"
-              }`}
-            >
-              Settings
-            </h2>
-            <p className="text-gray-500">Settings panel coming soon...</p>
-          </Card>
-        );
+        return <AdminSetting />;
       default:
         return <p>Content not found.</p>;
     }

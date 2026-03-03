@@ -9,6 +9,8 @@ const {
   updateCompany,
   getMyCompany,
   deleteCompany,
+  approveCompany,
+  rejectCompany,
   getCompanyStats,
 } = require("../controllers/companyController");
 
@@ -41,5 +43,11 @@ router.put("/:id", authGuard, updateCompany);
  */
 // Delete a company (admin only)
 router.delete("/:id", authGuard, isAdmin, deleteCompany);
+
+// Approve a company (admin only)
+router.patch("/:id/approve", authGuard, isAdmin, approveCompany);
+
+// Reject a company (admin only)
+router.patch("/:id/reject", authGuard, isAdmin, rejectCompany);
 
 module.exports = router;

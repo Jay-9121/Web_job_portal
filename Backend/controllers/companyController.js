@@ -144,6 +144,7 @@ const createCompany = async (req, res) => {
       website,
       industry,
       companySize,
+      status: "pending", // Default status for new companies
     });
 
     res.status(201).json({
@@ -293,6 +294,86 @@ const deleteCompany = async (req, res) => {
 };
 
 /**
+ * Approve a company (admin only)
+ */
+const approveCompany = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Only admin can approve companies
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Only admins can approve companies",
+      });
+    }
+
+    const company = await Company.findByPk(id);
+
+    if (!company) {
+      return res.status(404).json({
+        success: false,
+        message: "Company not found",
+      });
+    }
+
+    await company.update({ status: "approved" });
+
+    res.json({
+      success: true,
+      company,
+      message: "Company approved successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error approving company",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Reject a company (admin only)
+ */
+const rejectCompany = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Only admin can reject companies
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Only admins can reject companies",
+      });
+    }
+
+    const company = await Company.findByPk(id);
+
+    if (!company) {
+      return res.status(404).json({
+        success: false,
+        message: "Company not found",
+      });
+    }
+
+    await company.update({ status: "rejected" });
+
+    res.json({
+      success: true,
+      company,
+      message: "Company rejected successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error rejecting company",
+      error: error.message,
+    });
+  }
+};
+
+/**
  * Get company statistics (number of jobs, applications)
  */
 const getCompanyStats = async (req, res) => {
@@ -367,5 +448,7 @@ module.exports = {
   updateCompany,
   getMyCompany,
   deleteCompany,
+  approveCompany,
+  rejectCompany,
   getCompanyStats,
 };
