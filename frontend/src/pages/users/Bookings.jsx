@@ -15,7 +15,7 @@ import {
   Eye,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { getUserBookings } from "../../services/api";
+import { getUserApplications } from "../../services/api";
 import { useTheme } from "../../context/ThemeContext";
 import { Card, Badge, Button } from "../../components/ui";
 
@@ -24,70 +24,76 @@ const Bookings = ({ user, onLogout, setCurrentPage }) => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
+  const [error, setError] = useState(null);
 
-  // Sample job applications data for demonstration
+  // Fetch real applications from API
   useEffect(() => {
-    // Simulate fetching applications
-    const timer = setTimeout(() => {
-      setApplications([
-        {
-          id: 1,
-          jobTitle: "Senior Software Engineer",
-          company: "TechCorp Inc.",
-          location: "San Francisco, CA",
-          salary: "$120,000 - $180,000",
-          status: "pending",
-          appliedDate: "2024-01-15",
-          appliedDateDisplay: "2 days ago",
-        },
-        {
-          id: 2,
-          jobTitle: "Product Designer",
-          company: "DesignHub",
-          location: "Remote",
-          salary: "$90,000 - $130,000",
-          status: "interview",
-          appliedDate: "2024-01-10",
-          appliedDateDisplay: "1 week ago",
-          interviewDate: "2024-01-20",
-          interviewTime: "2:00 PM",
-        },
-        {
-          id: 3,
-          jobTitle: "Marketing Manager",
-          company: "GrowthBox",
-          location: "New York, NY",
-          salary: "$80,000 - $110,000",
-          status: "rejected",
-          appliedDate: "2024-01-08",
-          appliedDateDisplay: "3 days ago",
-        },
-        {
-          id: 4,
-          jobTitle: "Frontend Developer",
-          company: "WebSolutions",
-          location: "Remote",
-          salary: "$80,000 - $120,000",
-          status: "accepted",
-          appliedDate: "2024-01-05",
-          appliedDateDisplay: "2 weeks ago",
-        },
-        {
-          id: 5,
-          jobTitle: "Data Analyst",
-          company: "DataDriven",
-          location: "Austin, TX",
-          salary: "$70,000 - $95,000",
-          status: "pending",
-          appliedDate: "2024-01-18",
-          appliedDateDisplay: "1 day ago",
-        },
-      ]);
-      setLoading(false);
-    }, 800);
+    const fetchApplications = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await getUserApplications();
+        
+        if (response.data.success) {
+          // Transform backend data to match UI structure
+          const transformedApps = response.data.applications.map((app) => ({
+            id: app.id,
+            jobTitle: app.jobDetails?.title || app.Job?.title || "Unknown Job",
+            company: app.jobDetails?.companyDetails?.name || app.Job?.Company?.companyName || app.Job?.Company?.name || "Unknown Company",
+            location: app.jobDetails?.location || app.Job?.location || "Remote",
+            salary: app.jobDetails?.salaryRange || app.Job?.salaryRange || "Competitive",
+            // Map backend status to UI status
+            status: mapBackendStatusToUI(app.status),
+            appliedDate: new Date(app.createdAt).toISOString().split('T')[0],
+            appliedDateDisplay: getRelativeTime(app.createdAt),
+            // Keep original status for reference
+            originalStatus: app.status,
+          }));
+          
+          setApplications(transformedApps);
+        } else {
+          setError(response.data.message || "Failed to fetch applications");
+        }
+      } catch (err) {
+        console.error("Error fetching applications:", err);
+        setError(err.response?.data?.message || "Failed to fetch applications. Please try again.");
+        // Fallback to empty array on error
+        setApplications([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    fetchApplications();
   }, []);
+
+  // Map backend status to UI status
+  const mapBackendStatusToUI = (backendStatus) => {
+    const statusMap = {
+      'applied': 'pending',
+      'shortlisted': 'interview',
+      'accepted': 'accepted',
+      'rejected': 'rejected',
+      'withdrawn': 'rejected'
+    };
+    return statusMap[backendStatus] || 'pending';
+  };
+
+  // Get relative time string
+  const getRelativeTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} week(s) ago`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} month(s) ago`;
+    return `${Math.floor(diffDays / 365)} year(s) ago`;
+  };
 
   const getFilteredApplications = () => {
     if (activeTab === "all") return applications;
@@ -239,6 +245,33 @@ const Bookings = ({ user, onLogout, setCurrentPage }) => {
             >
               Loading applications...
             </p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-96 text-center">
+            <AlertCircle
+              size={64}
+              className="mb-6 text-red-500"
+            />
+            <h3
+              className={`text-2xl font-black mb-4 uppercase tracking-tighter ${
+                theme === "dark" ? "text-red-400" : "text-red-600"
+              }`}
+            >
+              Error Loading Applications
+            </h3>
+            <p
+              className={`font-medium mb-6 ${
+                theme === "dark" ? "text-slate-400" : "text-slate-500"
+              }`}
+            >
+              {error}
+            </p>
+            <Button 
+              variant="primary" 
+              onClick={() => window.location.reload()}
+            >
+              Try Again
+            </Button>
           </div>
         ) : filteredApplications.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-96 text-center">

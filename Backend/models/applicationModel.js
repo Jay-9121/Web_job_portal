@@ -45,10 +45,22 @@ const Application = sequelize.define(
     },
     // Application status - tracks the application lifecycle
     status: {
-      type: DataTypes.ENUM("pending", "accepted", "rejected", "withdrawn"),
+      // Expanded enum to cover both legacy "pending" value and the
+      // more meaningful job‑portal statuses used throughout the UI.
+      // Keeping "pending" allows old rows to remain valid while new
+      // records will default to "applied".
+      type: DataTypes.ENUM(
+        "pending",      // legacy/unused booking status
+        "applied",      // initial job application state
+        "shortlisted",  // company has shortlisted the candidate
+        "accepted",
+        "rejected",
+        "withdrawn"
+      ),
       allowNull: false,
-      defaultValue: "pending",
-      comment: "Application status: pending, accepted, rejected, or withdrawn",
+      defaultValue: "applied",
+      comment:
+        "Application status: applied, shortlisted, accepted, rejected, withdrawn (pending retained for backwards compatibility)",
     },
     // Additional notes from employer
     notes: {
@@ -79,6 +91,20 @@ const Application = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
       comment: "Applicant portfolio or GitHub URL",
+    },
+    // Skills/Qualifications - JSON array of skills
+    skills: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: [],
+      comment: "Array of qualifications and skills provided by applicant",
+    },
+    // Work Experience - JSON array of experience objects
+    experience: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: [],
+      comment: "Array of work experience objects {position, company, duration}",
     },
   },
   {

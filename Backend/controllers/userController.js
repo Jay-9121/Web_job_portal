@@ -350,8 +350,58 @@ const changePassword = async (req, res) => {
   }
 };
 
+// Upload CV/Resume
+const uploadCV = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const user = await User.findByPk(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+
+    const file = req.files[0];
+    const cvPath = `uploads/${file.filename}`;
+
+    await user.update({ cvPath });
+
+    return res.json({
+      success: true,
+      message: 'CV uploaded successfully',
+      cvPath,
+      user: { id: user.id, username: user.username, cvPath }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Get user profile with CV
+const getUserProfile = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const user = await User.findByPk(userId, {
+      attributes: { exclude: ['password'] }
+    });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    return res.json({
+      success: true,
+      user,
+      message: 'User profile fetched successfully'
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports={
     getAllUser,addUser,getUsersById,getActiveUsers,updateUser,deleteUser,
-    logInUser,getMe,forgotPassword,resetPassword, verifyOtp, changePassword
+    logInUser,getMe,forgotPassword,resetPassword, verifyOtp, changePassword, uploadCV, getUserProfile
 }
 

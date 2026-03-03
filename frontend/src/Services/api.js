@@ -136,7 +136,7 @@ export const updateBookingStatus = (id, status) =>
   API.put(`/booking/${id}/status`, { status });
 
 // Dashboard stats API
-export const getDashboardStats = () => API.get("/dashboard/stats");
+// (defined later under STATS API section — keep single declaration)
 
 // ============== CUISINE API ==============
 export const getAllCuisines = () => API.get("/cuisine");
@@ -206,5 +206,100 @@ export const updateReview = (id, reviewData) =>
 export const deleteReview = (id) => API.delete(`/reviews/${id}`);
 
 export const getAllReviews = (params) => API.get("/reviews", { params });
+
+// ============== JOB PORTAL API ==============
+
+// Job API calls
+export const getAllJobs = (params) => API.get("/jobs", { params });
+
+export const searchJobs = (params) => API.get("/jobs/search", { params });
+
+export const getJobById = (id) => API.get(`/jobs/${id}`);
+
+export const createJob = (jobData) => API.post("/jobs", jobData);
+
+export const updateJob = (id, jobData) => API.put(`/jobs/${id}`, jobData);
+
+export const deleteJob = (id) => API.delete(`/jobs/${id}`);
+
+export const closeJob = (id) => API.patch(`/jobs/${id}/close`);
+
+export const getJobsByCompany = (companyId, params) =>
+  API.get(`/jobs/company/${companyId}`, { params });
+
+// Company API calls
+export const getAllCompanies = (params) => API.get("/companies", { params });
+
+export const getCompanyById = (id) => API.get(`/companies/${id}`);
+
+export const createCompany = (companyData) => API.post("/companies", companyData);
+
+export const updateCompany = (id, companyData) =>
+  API.put(`/companies/${id}`, companyData);
+
+export const deleteCompany = (id) => API.delete(`/companies/${id}`);
+
+export const getMyCompany = () => API.get("/companies/profile/me");
+
+export const getCompanyStats = () => API.get("/companies/stats/overview");
+
+// Application API calls
+export const submitApplication = (applicationData) => {
+  // If applicationData is FormData (for file uploads), don't set Content-Type
+  // Axios will set the correct multipart/form-data with boundary
+  if (applicationData instanceof FormData) {
+    return API.post("/applications/submit", applicationData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  }
+  // Regular JSON submission
+  return API.post("/applications/submit", applicationData);
+};
+
+export const getApplicationsByJob = (jobId, params) =>
+  API.get(`/applications/job/${jobId}`, { params });
+
+export const getApplicationsByUser = (userId, params) =>
+  API.get(`/applications/user/${userId}`, { params });
+
+export const getApplicationById = (id) => API.get(`/applications/${id}`);
+
+export const updateApplicationStatus = (id, status) =>
+  API.patch(`/applications/${id}/status`, { status });
+
+export const withdrawApplication = (id) => API.patch(`/applications/${id}/withdraw`);
+
+export const deleteApplication = (id) => API.delete(`/applications/${id}`);
+
+export const getApplicationStats = () => API.get("/applications/stats/overview");
+
+// ============== STATS API ==============
+// Public stats - home page
+export const getPublicStats = () => API.get("/stats");
+
+// Admin dashboard stats
+export const getDashboardStats = () => API.get("/stats/dashboard");
+
+export const getUserApplications = () => API.get("/stats/my-applications");
+
+export const getAllApplications = (params) => API.get("/stats/all-applications", { params });
+
+// Saved jobs API
+export const saveJob = (jobId) => API.post("/stats/save-job", { jobId });
+
+export const removeSavedJob = (jobId) => API.delete(`/stats/saved-jobs/${jobId}`);
+
+export const getSavedJobs = () => API.get("/stats/saved-jobs");
+
+// ============== USER CV UPLOAD ==============
+export const uploadCV = (formData) => API.post("/user/upload-cv", formData, {
+  headers: {
+    "Content-Type": "multipart/form-data"
+  }
+});
+
+export const getUserProfile = () => API.get("/user/profile");
 
 export default API;

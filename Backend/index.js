@@ -69,29 +69,76 @@ Cuisine.belongsToMany(Restaurant, {
 // =================================================
 
 app.use("/api/user/", require("./routes/route"));
-app.use("/api", require("./routes/venueRoute"));
+// app.use("/api", require("./routes/venueRoute"));
 app.use("/api", bookingRoutes);
 // Admin settings routes
 app.use("/api/admin", require("./routes/settingsRoute"));
 
 // Cuisine routes
-app.use("/api/cuisine", require("./routes/cuisineRoute"));
+// app.use("/api/cuisine", require("./routes/cuisineRoute"));
 
 // Dish routes
-app.use("/api/dishes", require("./routes/dishRoute"));
-
-// Restaurant-Cuisine association routes
-const restaurantCuisineRoutes = require("./routes/restaurantCuisineRoute");
-app.use("/api/restaurant", restaurantCuisineRoutes);
+// app.use("/api/dishes", require("./routes/dishRoute"));
 
 // Review routes
 app.use("/api/reviews", require("./routes/reviewRoute"));
 
+// ============== JOB PORTAL ROUTES ==============
+// Job routes
+app.use("/api/jobs", require("./routes/jobRoute"));
+
+// Application routes
+app.use("/api/applications", require("./routes/applicationRoute"));
+
+// Company routes
+app.use("/api/companies", require("./routes/companyRoute"));
+
+// Stats/Dashboard routes
+app.use("/api/stats", require("./routes/statsRoute"));
+// ==============================================
+
 app.get("/", (req, res) => {
   res.json({
-    message: "Welcome to the TurfTime API",
+    message: "Welcome to the Job Portal API",
   });
 });
+
+// ============== GLOBAL ERROR HANDLING MIDDLEWARE ==============
+/**
+ * 404 Not Found handler
+ */
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+    path: req.path,
+    method: req.method,
+  });
+});
+
+/**
+ * Global error handler middleware
+ * Catches all errors thrown in async middleware and route handlers
+ */
+app.use((err, req, res, next) => {
+  console.error("Global Error Handler:", {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+    timestamp: new Date().toISOString(),
+  });
+
+  const statusCode = err.statusCode || 500;
+  const isDevelopment = process.env.NODE_ENV !== "production";
+
+  res.status(statusCode).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+    ...(isDevelopment && { stack: err.stack, fullError: err }),
+  });
+});
+// ==============================================
 
 const startServer = async () => {
   await connectDB();

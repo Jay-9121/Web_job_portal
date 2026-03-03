@@ -7,6 +7,7 @@ export const Button = ({
   size = "md",
   className = "",
   disabled = false,
+  fullWidth = false,
   ...props
 }) => {
   const baseStyles =
@@ -34,7 +35,7 @@ export const Button = ({
     <button
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${
         disabled ? "opacity-50 cursor-not-allowed" : ""
-      } ${className}`}
+      } ${fullWidth ? "w-full" : ""} ${className}`}
       disabled={disabled}
       {...props}
     >

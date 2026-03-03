@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Nav from "../components/Nav";
 import UserDashboard from "./UserDashboard";
 import Bookings from "./Bookings";
-import Home from "./Home";
+import JobsDisplay from "../jobs/JobsDisplay"; // show jobs listing for authenticated users
 import Profile from "./Profile";
 import Settings from "./Settings";
 import { useTheme } from "../../context/ThemeContext";
@@ -30,12 +30,10 @@ const UserPages = ({ user, onLogout }) => {
           />
         );
       case "jobs":
+        // when the sidebar 'Jobs' tab is clicked by a logged in user,
+        // render the JobsDisplay component instead of the public Home page
         return (
-          <Home
-            user={user}
-            onLogout={onLogout}
-            setCurrentPage={setCurrentPage}
-          />
+          <JobsDisplay onNavigate={setCurrentPage} />
         );
       case "profile":
         return (

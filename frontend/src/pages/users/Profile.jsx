@@ -14,7 +14,7 @@ import {
   Loader2,
   CheckCircle,
 } from "lucide-react";
-import { updateUserProfile, getMe, changePassword } from "../../services/api";
+import { updateUserProfile, getMe, changePassword, uploadCV } from "../../services/api";
 import { toast } from "react-toastify";
 
 const Profile = ({ user, onLogout, setCurrentPage }) => {
@@ -33,6 +33,8 @@ const Profile = ({ user, onLogout, setCurrentPage }) => {
     location: "",
     bio: "",
   });
+  const [cvPath, setCvPath] = useState("");
+  const [uploadingCv, setUploadingCv] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -47,6 +49,7 @@ const Profile = ({ user, onLogout, setCurrentPage }) => {
             location: u.location || "Mumbai, India",
             bio: u.bio || "",
           });
+          setCvPath(u.cvPath || "");
           // ensure localStorage user is up-to-date
           localStorage.setItem("user", JSON.stringify(u));
         }
@@ -60,6 +63,32 @@ const Profile = ({ user, onLogout, setCurrentPage }) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProfileData({ ...profileData, [name]: value });
+  };
+
+  const handleCvChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const allowed = ["application/pdf", "image/jpeg", "image/png"];
+    if (!allowed.includes(file.type)) {
+      toast.error("Only PDF or image files are allowed");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("cv", file);
+    try {
+      setUploadingCv(true);
+      const res = await uploadCV(formData);
+      if (res.data.success) {
+        setCvPath(res.data.cvPath);
+        toast.success("CV uploaded successfully");
+      } else {
+        toast.error(res.data.message || "Upload failed");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Upload error");
+    } finally {
+      setUploadingCv(false);
+    }
   };
 
   const handleSave = async () => {
@@ -296,6 +325,35 @@ const Profile = ({ user, onLogout, setCurrentPage }) => {
                         : "bg-gray-50 border-transparent text-gray-400"
                     }`}
                   />
+                </div>
+
+                {/* CV Upload */}
+                <div className="mt-6 space-y-2">
+                  <label className="text-xs font-bold text-gray-500 ml-1">
+                    Resume / CV
+                  </label>
+                  {cvPath && (
+                    <div className="mb-2">
+                      <a
+                        href={`/${cvPath}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-indigo-600 underline text-sm"
+                      >
+                        View current document
+                      </a>
+                    </div>
+                  )}
+                  <input
+                    disabled={!isEditing || uploadingCv}
+                    type="file"
+                    accept=".pdf,image/*"
+                    onChange={handleCvChange}
+                    className="w-full text-sm"
+                  />
+                  {uploadingCv && (
+                    <p className="text-xs text-gray-500">uploading...</p>
+                  )}
                 </div>
               </div>
             </div>

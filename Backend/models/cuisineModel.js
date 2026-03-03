@@ -1,35 +1,24 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../database/db");
 
+// Simple Cuisine model to support restaurant/venue features
+// This model is referenced by venueController and in the REST APIs.
 const Cuisine = sequelize.define(
   "Cuisine",
   {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-    },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
-      validate: {
-        notEmpty: true,
-      },
-    },
-    description: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-    image: {
-      type: DataTypes.STRING,
-      allowNull: true,
+      comment: "Name of the cuisine (e.g., Italian, Chinese)"
     },
   },
   {
-    tableName: "cuisines",
     timestamps: true,
-  },
+    tableName: "cuisines",
+    comment:
+      "Cuisine table used for categorizing restaurants/venues by food type",
+  }
 );
 
 module.exports = Cuisine;

@@ -1,20 +1,28 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../database/db");
 
-const RestaurantCuisine = sequelize.define("RestaurantCuisine", {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
+// Join table representing many-to-many relationship between
+// restaurants/venues and cuisines.
+const RestaurantCuisine = sequelize.define(
+  "RestaurantCuisine",
+  {
+    restaurantId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      comment: "Foreign key to venue/restaurant table",
+    },
+    cuisineId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      comment: "Foreign key to cuisine table",
+    },
   },
-  restaurantId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-  cuisineId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-  },
-});
+  {
+    timestamps: false,
+    tableName: "restaurant_cuisines",
+    comment:
+      "Join table linking restaurants/venues with their available cuisines",
+  }
+);
 
 module.exports = RestaurantCuisine;

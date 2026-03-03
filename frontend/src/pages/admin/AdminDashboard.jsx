@@ -15,12 +15,14 @@ import {
   Eye,
   Settings,
   Plus,
+  X,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import {
   getDashboardStats,
-  getAllUsers,
-  getAllBookings,
+  getAllApplications,
+  createJob,
+  getMe,
 } from "../../services/api";
 import { getInitials } from "../../helpers/getInitials";
 import { useTheme } from "../../context/ThemeContext";
@@ -69,22 +71,57 @@ const AdminDashboard = ({ onLogout }) => {
   ]);
   const [loading, setLoading] = useState(true);
   const [recentApplications, setRecentApplications] = useState([]);
-  const [usersMap, setUsersMap] = useState({});
+  const [user, setUser] = useState(null);
+  const [showJobModal, setShowJobModal] = useState(false);
+  const [jobSubmitting, setJobSubmitting] = useState(false);
+  const [selectedApplicationForDetail, setSelectedApplicationForDetail] = useState(null);
+  const [jobForm, setJobForm] = useState({
+    title: "",
+    description: "",
+    location: "",
+    jobType: "full-time",
+    experienceLevel: "mid",
+    salaryRange: "",
+    minSalary: "",
+    maxSalary: "",
+    skillsRequired: "",
+    vacancies: 1,
+  });
 
   useEffect(() => {
     document.title = `Admin - ${activeTab}`;
   }, [activeTab]);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    fetchDashboardData();
+  }, [activeTab]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch user info
       try {
-        setLoading(true);
-        // Using sample data for demonstration since we're converting to job portal
-        setTimeout(() => {
+        const userResponse = await getMe();
+        if (userResponse.data.success) {
+          setUser(userResponse.data.user);
+        }
+      } catch (userError) {
+        console.error("Error fetching user info:", userError);
+        toast.error("Failed to load user information");
+      }
+
+      // Fetch dashboard stats
+      try {
+        const statsResponse = await getDashboardStats();
+        if (statsResponse.data.success) {
+          const { totalUsers, activeJobs, totalCompanies, totalApplications } =
+            statsResponse.data.stats;
+
           setStats([
             {
               label: "Total Users",
-              value: "1,234",
+              value: totalUsers.toString(),
               icon: Users,
               color: "text-indigo-600",
               bg: "bg-indigo-50",
@@ -93,7 +130,7 @@ const AdminDashboard = ({ onLogout }) => {
             },
             {
               label: "Active Jobs",
-              value: "567",
+              value: activeJobs.toString(),
               icon: Briefcase,
               color: "text-blue-600",
               bg: "bg-blue-50",
@@ -102,7 +139,7 @@ const AdminDashboard = ({ onLogout }) => {
             },
             {
               label: "Companies",
-              value: "89",
+              value: totalCompanies.toString(),
               icon: Building2,
               color: "text-purple-600",
               bg: "bg-purple-50",
@@ -111,7 +148,7 @@ const AdminDashboard = ({ onLogout }) => {
             },
             {
               label: "Applications",
-              value: "2,456",
+              value: totalApplications.toString(),
               icon: FileText,
               color: "text-rose-600",
               bg: "bg-rose-50",
@@ -119,71 +156,105 @@ const AdminDashboard = ({ onLogout }) => {
               trendUp: true,
             },
           ]);
-          setLoading(false);
-        }, 800);
-
-        // Sample recent applications
-        setRecentApplications([
-          {
-            id: 1,
-            applicantName: "John Smith",
-            jobTitle: "Senior Software Engineer",
-            company: "TechCorp Inc.",
-            status: "pending",
-            appliedDate: "2 hours ago",
-          },
-          {
-            id: 2,
-            applicantName: "Sarah Johnson",
-            jobTitle: "Product Designer",
-            company: "DesignHub",
-            status: "accepted",
-            appliedDate: "5 hours ago",
-          },
-          {
-            id: 3,
-            applicantName: "Mike Davis",
-            jobTitle: "Marketing Manager",
-            company: "GrowthBox",
-            status: "pending",
-            appliedDate: "1 day ago",
-          },
-          {
-            id: 4,
-            applicantName: "Emily Brown",
-            jobTitle: "Data Analyst",
-            company: "DataDriven",
-            status: "rejected",
-            appliedDate: "2 days ago",
-          },
-          {
-            id: 5,
-            applicantName: "Alex Wilson",
-            jobTitle: "Frontend Developer",
-            company: "WebSolutions",
-            status: "pending",
-            appliedDate: "3 days ago",
-          },
-        ]);
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-        toast.error("Failed to load dashboard stats");
-        setLoading(false);
+        }
+      } catch (statsError) {
+        console.error("Error fetching stats:", statsError);
+        const errorMsg = statsError.response?.data?.message || "Failed to load dashboard statistics";
+        toast.error(errorMsg);
       }
-    };
 
-    if (activeTab === "Dashboard") {
-      fetchStats();
+      // Fetch recent applications
+      if (activeTab === "Dashboard") {
+        try {
+          const appResponse = await getAllApplications({ page: 1, limit: 5 });
+          if (appResponse.data.success) {
+            setRecentApplications(appResponse.data.applications);
+          }
+        } catch (appError) {
+          console.error("Error fetching applications:", appError);
+          toast.error("Failed to load applications");
+        }
+      }
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Unexpected error in fetchDashboardData:", error);
+      toast.error("An unexpected error occurred");
+      setLoading(false);
     }
-  }, [activeTab]);
+  };
+
+  const handleJobInputChange = (e) => {
+    const { name, value } = e.target;
+    setJobForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateJob = async (e) => {
+    e.preventDefault();
+
+    if (!jobForm.title || !jobForm.description || !jobForm.location) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    try {
+      setJobSubmitting(true);
+
+      const submitData = {
+        ...jobForm,
+        skillsRequired: jobForm.skillsRequired
+          ? jobForm.skillsRequired.split(",").map((s) => s.trim())
+          : [],
+        minSalary: jobForm.minSalary ? parseInt(jobForm.minSalary) : null,
+        maxSalary: jobForm.maxSalary ? parseInt(jobForm.maxSalary) : null,
+        vacancies: parseInt(jobForm.vacancies) || 1,
+      };
+
+      const response = await createJob(submitData);
+
+      if (response.data.success) {
+        toast.success("Job created successfully!");
+        setShowJobModal(false);
+        setJobForm({
+          title: "",
+          description: "",
+          location: "",
+          jobType: "full-time",
+          experienceLevel: "mid",
+          salaryRange: "",
+          minSalary: "",
+          maxSalary: "",
+          skillsRequired: "",
+          vacancies: 1,
+        });
+        // Refresh dashboard
+        fetchDashboardData();
+      }
+    } catch (error) {
+      console.error("Error creating job:", {
+        status: error.response?.status,
+        message: error.response?.data?.message,
+        fullError: error
+      });
+      const errorMsg = error.response?.data?.message || "Failed to create job. Please try again.";
+      toast.error(errorMsg);
+    } finally {
+      setJobSubmitting(false);
+    }
+  };
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      pending: { variant: "warning", label: "Pending", icon: Clock },
-      accepted: { variant: "success", label: "Shortlisted", icon: CheckCircle },
+      applied: { variant: "warning", label: "Applied", icon: Clock },
+      shortlisted: {
+        variant: "success",
+        label: "Shortlisted",
+        icon: CheckCircle,
+      },
+      accepted: { variant: "success", label: "Accepted", icon: CheckCircle },
       rejected: { variant: "danger", label: "Rejected", icon: XCircle },
     };
-    const config = statusConfig[status] || statusConfig.pending;
+    const config = statusConfig[status] || statusConfig.applied;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -262,12 +333,21 @@ const AdminDashboard = ({ onLogout }) => {
                   >
                     Recent Applications
                   </h3>
-                  <button className="text-indigo-600 text-sm font-bold">
+                  <button className="text-indigo-600 text-sm font-bold hover:text-indigo-700">
                     View All
                   </button>
                 </div>
 
-                <div className="overflow-x-auto">
+                {loading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="h-16 bg-gray-200 animate-pulse rounded-lg"
+                      />
+                    ))}
+                  </div>
+                ) : (
                   <table className="w-full text-left">
                     <thead>
                       <tr
@@ -289,7 +369,7 @@ const AdminDashboard = ({ onLogout }) => {
                     <tbody className="divide-y divide-gray-50">
                       {recentApplications.length > 0 ? (
                         recentApplications.map((app) => {
-                          const initials = getInitials(app.applicantName);
+                          const initials = getInitials(app.applicant?.username || "U");
                           return (
                             <tr
                               key={app.id}
@@ -307,7 +387,7 @@ const AdminDashboard = ({ onLogout }) => {
                                         : "text-gray-700"
                                     }`}
                                   >
-                                    {app.applicantName}
+                                    {app.applicant?.username || "Unknown"}
                                   </span>
                                 </div>
                               </td>
@@ -318,7 +398,7 @@ const AdminDashboard = ({ onLogout }) => {
                                     : "text-gray-600"
                                 }`}
                               >
-                                {app.jobTitle}
+                                {app.Job?.title}
                               </td>
                               <td
                                 className={`py-4 text-sm ${
@@ -327,7 +407,7 @@ const AdminDashboard = ({ onLogout }) => {
                                     : "text-gray-600"
                                 }`}
                               >
-                                {app.company}
+                                {app.Job?.Company?.name || "Company"}
                               </td>
                               <td className="py-4">
                                 {getStatusBadge(app.status)}
@@ -339,7 +419,15 @@ const AdminDashboard = ({ onLogout }) => {
                                     : "text-gray-500"
                                 }`}
                               >
-                                {app.appliedDate}
+                                <div className="flex flex-col items-end">
+                                  <span>{new Date(app.createdAt).toLocaleDateString()}</span>
+                                  <button
+                                    onClick={() => setSelectedApplicationForDetail(app)}
+                                    className="text-xs text-indigo-600 hover:underline mt-1"
+                                  >
+                                    View Details
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -356,7 +444,7 @@ const AdminDashboard = ({ onLogout }) => {
                       )}
                     </tbody>
                   </table>
-                </div>
+                )}
               </div>
 
               {/* Quick Actions & Tips */}
@@ -408,7 +496,7 @@ const AdminDashboard = ({ onLogout }) => {
                     Quick Actions
                   </h3>
                   <div className="space-y-3">
-                    <button className="w-full flex items-center gap-3 p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors">
+                    <button onClick={() => setShowJobModal(true)} className="w-full flex items-center gap-3 p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors">
                       <Plus size={18} />
                       <span className="font-bold text-sm">Add New Job</span>
                     </button>
@@ -426,6 +514,64 @@ const AdminDashboard = ({ onLogout }) => {
             </div>
           </div>
         );
+      
+      // Application Detail Drawer
+      if (selectedApplicationForDetail) {
+        const app = selectedApplicationForDetail;
+        return (
+          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4">
+            <div className="w-full max-w-3xl bg-white rounded-t-xl md:rounded-xl shadow-lg overflow-y-auto max-h-[90vh]">
+              <div className="p-6 border-b flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-bold">Application Details</h3>
+                  <p className="text-sm text-gray-500">{app.applicant?.username} applied for {app.jobDetails?.title}</p>
+                </div>
+                <button onClick={() => setSelectedApplicationForDetail(null)} className="text-gray-500 hover:text-gray-700">Close</button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <h4 className="font-semibold">Cover Letter</h4>
+                  <div className="mt-2 bg-gray-50 p-3 rounded text-sm text-gray-700 whitespace-pre-wrap">{app.coverLetter || "No cover letter provided"}</div>
+                </div>
+
+                {app.skills && app.skills.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold">Skills & Qualifications</h4>
+                    <ul className="mt-2 list-disc list-inside text-sm text-gray-700">
+                      {app.skills.map((s, i) => <li key={i}>{s}</li>)}
+                    </ul>
+                  </div>
+                )}
+
+                {app.experience && app.experience.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold">Work Experience</h4>
+                    <div className="mt-2 space-y-2">
+                      {app.experience.map((e, i) => (
+                        <div key={i} className="text-sm">
+                          <p className="font-medium">{e.position}</p>
+                          <p className="text-gray-600 text-sm">{e.company} • {e.duration}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 pt-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Applied</p>
+                    <p className="font-medium">{new Date(app.createdAt).toLocaleString()}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-500">Status</p>
+                    <div className="mt-1">{getStatusBadge(app.status)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
       case "Users":
         return (
           <Card
@@ -542,6 +688,256 @@ const AdminDashboard = ({ onLogout }) => {
 
         <section>{renderContent()}</section>
       </main>
+
+      {/* Job Creation Modal */}
+      {showJobModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div
+            className={`rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${
+              theme === "dark" ? "bg-slate-800" : "bg-white"
+            }`}
+          >
+            {/* Modal Header */}
+            <div
+              className={`flex justify-between items-center p-6 border-b ${
+                theme === "dark"
+                  ? "border-slate-700 text-white"
+                  : "border-gray-100"
+              }`}
+            >
+              <h2 className="text-2xl font-bold">Create New Job</h2>
+              <button
+                onClick={() => setShowJobModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleCreateJob} className="p-6 space-y-4">
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${
+                  theme === "dark" ? "text-gray-300" : "text-gray-700"
+                }`}>
+                  Job Title *
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={jobForm.title}
+                  onChange={handleJobInputChange}
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                    theme === "dark"
+                      ? "bg-slate-700 border-slate-600 text-white"
+                      : "bg-white border-gray-300"
+                  }`}
+                  placeholder="e.g., Senior React Developer"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${
+                  theme === "dark" ? "text-gray-300" : "text-gray-700"
+                }`}>
+                  Description *
+                </label>
+                <textarea
+                  name="description"
+                  value={jobForm.description}
+                  onChange={handleJobInputChange}
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                    theme === "dark"
+                      ? "bg-slate-700 border-slate-600 text-white"
+                      : "bg-white border-gray-300"
+                  }`}
+                  placeholder="Enter job description"
+                  rows="4"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                    Location *
+                  </label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={jobForm.location}
+                    onChange={handleJobInputChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                      theme === "dark"
+                        ? "bg-slate-700 border-slate-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                    placeholder="e.g., Remote"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                    Job Type
+                  </label>
+                  <select
+                    name="jobType"
+                    value={jobForm.jobType}
+                    onChange={handleJobInputChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                      theme === "dark"
+                        ? "bg-slate-700 border-slate-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  >
+                    <option value="full-time">Full-time</option>
+                    <option value="part-time">Part-time</option>
+                    <option value="contract">Contract</option>
+                    <option value="internship">Internship</option>
+                    <option value="freelance">Freelance</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                    Experience Level
+                  </label>
+                  <select
+                    name="experienceLevel"
+                    value={jobForm.experienceLevel}
+                    onChange={handleJobInputChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                      theme === "dark"
+                        ? "bg-slate-700 border-slate-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  >
+                    <option value="entry">Entry Level</option>
+                    <option value="mid">Mid Level</option>
+                    <option value="senior">Senior</option>
+                    <option value="lead">Lead</option>
+                    <option value="executive">Executive</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                    Vacancies
+                  </label>
+                  <input
+                    type="number"
+                    name="vacancies"
+                    value={jobForm.vacancies}
+                    onChange={handleJobInputChange}
+                    min="1"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                      theme === "dark"
+                        ? "bg-slate-700 border-slate-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                    Min Salary
+                  </label>
+                  <input
+                    type="number"
+                    name="minSalary"
+                    value={jobForm.minSalary}
+                    onChange={handleJobInputChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                      theme === "dark"
+                        ? "bg-slate-700 border-slate-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                    placeholder="50000"
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                    Max Salary
+                  </label>
+                  <input
+                    type="number"
+                    name="maxSalary"
+                    value={jobForm.maxSalary}
+                    onChange={handleJobInputChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                      theme === "dark"
+                        ? "bg-slate-700 border-slate-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                    placeholder="80000"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${
+                  theme === "dark" ? "text-gray-300" : "text-gray-700"
+                }`}>
+                  Skills Required (comma separated)
+                </label>
+                <input
+                  type="text"
+                  name="skillsRequired"
+                  value={jobForm.skillsRequired}
+                  onChange={handleJobInputChange}
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                    theme === "dark"
+                      ? "bg-slate-700 border-slate-600 text-white"
+                      : "bg-white border-gray-300"
+                  }`}
+                  placeholder="e.g., React, Node.js, MongoDB"
+                />
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex gap-3 pt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowJobModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={jobSubmitting}
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {jobSubmitting ? (
+                    <>
+                      <Spinner size={16} />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Job"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

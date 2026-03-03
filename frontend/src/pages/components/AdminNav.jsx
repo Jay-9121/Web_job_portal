@@ -2,7 +2,6 @@ import React from "react";
 import {
   LayoutDashboard,
   Users,
-  Calendar,
   Settings,
   LogOut,
   MapPin,
@@ -13,8 +12,8 @@ const AdminNav = ({ activeTab, setActiveTab, onLogout }) => {
   const navItems = [
     { name: "Dashboard", icon: LayoutDashboard },
     { name: "Users", icon: Users },
-    { name: "Bookings", icon: Calendar },
-    { name: "Restaurants", icon: MapPin },
+    { name: "Jobs", icon: ShieldCheck },
+    { name: "Companies", icon: MapPin },
     { name: "Settings", icon: Settings },
   ];
 

@@ -18,7 +18,12 @@ import {
   Calendar,
   TrendingUp,
 } from "lucide-react";
-import { getDashboardStats, getUserBookings } from "../../services/api";
+import {
+  getAllJobs,
+  submitApplication,
+  getUserApplications,
+  getMe,
+} from "../../services/api";
 import { useTheme } from "../../context/ThemeContext";
 import {
   Card,
@@ -27,7 +32,9 @@ import {
   Spinner,
   EmptyState,
   ProgressBar,
+  Tabs,
 } from "../../components/ui";
+import JobsDisplay from "../jobs/JobsDisplay";
 
 const UserDashboard = ({
   user = { username: "Guest", role: "Job Seeker" },
@@ -35,129 +42,139 @@ const UserDashboard = ({
   setCurrentPage,
 }) => {
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState("Dashboard");
+  const [activeTab, setActiveTab] = useState("Jobs");
   const [stats, setStats] = useState([]);
   const [applications, setApplications] = useState([]);
-  const [savedJobs, setSavedJobs] = useState([]);
+  const [jobs, setJobs] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingApps, setLoadingApps] = useState(true);
+  const [loadingJobs, setLoadingJobs] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const displayUser = {
     username: user?.username || "Guest",
     role: user?.role || "Job Seeker",
   };
 
-  const handleTabChange = (tab) => {
+  // tab: the tab id/name, propagate: when true also notify parent to change currentPage
+  const handleTabChange = (tab, propagate = false) => {
     setActiveTab(tab);
-    if (setCurrentPage) setCurrentPage(tab.toLowerCase());
+    if (propagate && setCurrentPage) setCurrentPage(tab.toLowerCase());
   };
 
-  // Sample data for demonstration
+  // Fetch real user applications and build stats
   useEffect(() => {
-    // Simulate fetching stats
-    const timer = setTimeout(() => {
-      setStats([
-        {
-          label: "Applications",
-          value: "12",
-          icon: FileText,
-          color: "text-blue-600",
-          bg: "bg-blue-50",
-          trend: "+3",
-        },
-        {
-          label: "Saved Jobs",
-          value: "8",
-          icon: Heart,
-          color: "text-rose-600",
-          bg: "bg-rose-50",
-          trend: "+2",
-        },
-        {
-          label: "Interviews",
-          value: "3",
-          icon: Calendar,
-          color: "text-emerald-600",
-          bg: "bg-emerald-50",
-          trend: "+1",
-        },
-        {
-          label: "Profile Views",
-          value: "45",
-          icon: Eye,
-          color: "text-purple-600",
-          bg: "bg-purple-50",
-          trend: "+15",
-        },
-      ]);
-      setLoadingStats(false);
-    }, 800);
+    const loadData = async () => {
+      try {
+        setLoadingStats(true);
+        setLoadingApps(true);
 
-    // Sample applications
-    setApplications([
-      {
-        id: 1,
-        jobTitle: "Senior Software Engineer",
-        company: "TechCorp Inc.",
-        location: "San Francisco, CA",
-        salary: "$120,000 - $180,000",
-        status: "pending",
-        appliedDate: "2 days ago",
-      },
-      {
-        id: 2,
-        jobTitle: "Product Designer",
-        company: "DesignHub",
-        location: "Remote",
-        salary: "$90,000 - $130,000",
-        status: "accepted",
-        appliedDate: "1 week ago",
-      },
-      {
-        id: 3,
-        jobTitle: "Marketing Manager",
-        company: "GrowthBox",
-        location: "New York, NY",
-        salary: "$80,000 - $110,000",
-        status: "rejected",
-        appliedDate: "3 days ago",
-      },
-    ]);
-    setLoadingApps(false);
+        // fetch current user (to ensure auth) and their applications
+        await getMe();
+        const appsRes = await getUserApplications();
+        const apps = appsRes.data.applications || appsRes.data.applications || [];
+        setApplications(apps);
 
-    return () => clearTimeout(timer);
+        // compute simple stats from applications
+        const total = apps.length;
+        const accepted = apps.filter((a) => a.status === "accepted").length;
+        const rejected = apps.filter((a) => a.status === "rejected").length;
+        const pending = apps.filter((a) => a.status === "applied" || a.status === "shortlisted").length;
+
+        setStats([
+          {
+            label: "Applications",
+            value: String(total || 0),
+            icon: FileText,
+            color: "text-blue-600",
+            bg: "bg-blue-50",
+            trend: null,
+          },
+          {
+            label: "Accepted",
+            value: String(accepted || 0),
+            icon: CheckCircle,
+            color: "text-emerald-600",
+            bg: "bg-emerald-50",
+          },
+          {
+            label: "Pending",
+            value: String(pending || 0),
+            icon: Clock,
+            color: "text-yellow-600",
+            bg: "bg-yellow-50",
+          },
+          {
+            label: "Rejected",
+            value: String(rejected || 0),
+            icon: XCircle,
+            color: "text-rose-600",
+            bg: "bg-rose-50",
+          },
+        ]);
+      } catch (err) {
+        console.error("Failed to load applications/stats", err);
+      } finally {
+        setLoadingStats(false);
+        setLoadingApps(false);
+      }
+    };
+
+    loadData();
   }, []);
 
-  // Sample saved jobs
+  // Fetch recent jobs for quick apply
   useEffect(() => {
-    setSavedJobs([
-      {
-        id: 1,
-        jobTitle: "Frontend Developer",
-        company: "WebSolutions",
-        location: "Remote",
-        salary: "$80,000 - $120,000",
-        postedDate: "1 day ago",
-      },
-      {
-        id: 2,
-        jobTitle: "DevOps Engineer",
-        company: "CloudFirst",
-        location: "Seattle, WA",
-        salary: "$130,000 - $170,000",
-        postedDate: "4 days ago",
-      },
-    ]);
+    const loadJobs = async () => {
+      try {
+        setLoadingJobs(true);
+        const res = await getAllJobs({ limit: 6 });
+        setJobs(res.data.jobs || res.data || []);
+      } catch (err) {
+        console.error("Failed to load jobs", err);
+      } finally {
+        setLoadingJobs(false);
+      }
+    };
+    loadJobs();
   }, []);
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      pending: { variant: "warning", label: "Pending" },
-      accepted: { variant: "success", label: "Interview" },
+      applied: { variant: "warning", label: "Pending" },
+      shortlisted: { variant: "warning", label: "Shortlisted" },
+      accepted: { variant: "success", label: "Accepted" },
       rejected: { variant: "danger", label: "Rejected" },
     };
-    const config = statusConfig[status] || statusConfig.pending;
+    const config = statusConfig[status] || statusConfig.applied;
     return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  const handleApply = async (jobId) => {
+    try {
+      const res = await submitApplication({ jobId });
+      if (res.data.success) {
+        // refresh applications and stats
+        const appsRes = await getUserApplications();
+        const apps = appsRes.data.applications || [];
+        setApplications(apps);
+
+        const total = apps.length;
+        const accepted = apps.filter((a) => a.status === "accepted").length;
+        const rejected = apps.filter((a) => a.status === "rejected").length;
+        const pending = apps.filter((a) => a.status === "applied" || a.status === "shortlisted").length;
+
+        setStats((s) => [
+          { ...s[0], value: String(total) },
+          { ...s[1], value: String(accepted) },
+          { ...s[2], value: String(pending) },
+          { ...s[3], value: String(rejected) },
+        ]);
+      }
+    } catch (err) {
+      console.error("Failed to apply", err.response?.data || err.message);
+      alert(err.response?.data?.message || "Failed to apply for job");
+    }
   };
 
   return (
@@ -225,9 +242,29 @@ const UserDashboard = ({
         </div>
       </header>
 
-      <div className="flex-1 p-8 pt-28 space-y-8">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="flex-1 p-8 pt-28">
+        {/* tab navigation inside dashboard */}
+        <div className="mb-6">
+          <Tabs
+            tabs={[
+              { id: "Jobs", label: "Jobs" },
+              { id: "Applications", label: "Applications" },
+            ]}
+            activeTab={activeTab}
+            onChange={handleTabChange}
+          />
+        </div>
+
+        <div className="space-y-8">
+          {/* Render JobsDisplay if Jobs tab is active */}
+          {activeTab === "Jobs" ? (
+            <div className="h-full -mx-8 -mb-8">
+              <JobsDisplay onNavigate={handleTabChange} />
+            </div>
+          ) : (
+            <>
+              {/* Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {loadingStats
             ? [1, 2, 3, 4].map((i) => (
                 <div
@@ -287,13 +324,32 @@ const UserDashboard = ({
               >
                 My Applications
               </h3>
-              <button
-                onClick={() => handleTabChange("Applications")}
-                className="text-indigo-600 font-bold text-xs uppercase tracking-widest flex items-center gap-1 hover:gap-2 transition-all"
-              >
-                View All <ChevronRight size={14} />
-              </button>
-            </div>
+              <div className="flex items-center gap-4">
+                {/* Status Filter */}
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium ${
+                    theme === "dark"
+                      ? "bg-slate-700 border-slate-600 text-white"
+                      : "bg-gray-50 border-gray-200 text-gray-700"
+                  } border focus:outline-none focus:ring-2 focus:ring-indigo-500`}
+                >
+                  <option value="all">All Status</option>
+                  <option value="applied">Applied</option>
+                  <option value="shortlisted">Shortlisted</option>
+                  <option value="accepted">Accepted</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="withdrawn">Withdrawn</option>
+                </select>
+                <button
+                  onClick={() => handleTabChange("Applications")}
+                  className="text-indigo-600 font-bold text-xs uppercase tracking-widest flex items-center gap-1 hover:gap-2 transition-all"
+                >
+                  View All <ChevronRight size={14} />
+                </button>
+              </div> REPLACE
+              </div>
 
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -317,53 +373,61 @@ const UserDashboard = ({
                       </td>
                     </tr>
                   ) : applications.length > 0 ? (
-                    applications.map((app) => (
-                      <tr
-                        key={app.id}
-                        className={`group hover:bg-indigo-50/30 transition-colors ${
-                          theme === "dark" ? "hover:bg-slate-700/50" : ""
-                        }`}
-                      >
-                        <td className="px-8 py-6">
-                          <div
-                            className={`font-bold ${
-                              theme === "dark" ? "text-white" : "text-gray-900"
-                            } group-hover:text-indigo-600 transition-colors`}
-                          >
-                            {app.jobTitle}
-                          </div>
-                          <div className="text-[10px] font-mono text-gray-400 uppercase tracking-tighter">
-                            {app.location}
-                          </div>
-                        </td>
-                        <td className="px-8 py-6">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">
-                              {app.company[0]}
-                            </div>
-                            <span
-                              className={`text-sm font-medium ${
-                                theme === "dark"
-                                  ? "text-gray-300"
-                                  : "text-gray-600"
-                              }`}
-                            >
-                              {app.company}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-8 py-6">
-                          {getStatusBadge(app.status)}
-                        </td>
-                        <td
-                          className={`px-8 py-6 text-right font-bold ${
-                            theme === "dark" ? "text-gray-400" : "text-gray-500"
+                    applications.map((app) => {
+                      // Get the correct job and company data from API response
+                      const jobTitle = app.Job?.title || app.jobTitle || "Unknown Job";
+                      const companyName = app.Job?.Company?.name || app.company || "Unknown Company";
+                      const location = app.Job?.location || app.location || "Not specified";
+                      const appliedDate = app.createdAt ? new Date(app.createdAt).toLocaleDateString() : app.appliedDate || "N/A";
+                      
+                      return (
+                        <tr
+                          key={app.id}
+                          className={`group hover:bg-indigo-50/30 transition-colors ${
+                            theme === "dark" ? "hover:bg-slate-700/50" : ""
                           }`}
                         >
-                          {app.appliedDate}
-                        </td>
-                      </tr>
-                    ))
+                          <td className="px-8 py-6">
+                            <div
+                              className={`font-bold ${
+                                theme === "dark" ? "text-white" : "text-gray-900"
+                              } group-hover:text-indigo-600 transition-colors`}
+                            >
+                              {jobTitle}
+                            </div>
+                            <div className="text-[10px] font-mono text-gray-400 uppercase tracking-tighter">
+                              {location}
+                            </div>
+                          </td>
+                          <td className="px-8 py-6">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">
+                                {companyName.charAt(0).toUpperCase()}
+                              </div>
+                              <span
+                                className={`text-sm font-medium ${
+                                  theme === "dark"
+                                    ? "text-gray-300"
+                                    : "text-gray-600"
+                                }`}
+                              >
+                                {companyName}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-8 py-6">
+                            {getStatusBadge(app.status)}
+                          </td>
+                          <td
+                            className={`px-8 py-6 text-right font-bold ${
+                              theme === "dark" ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
+                            {appliedDate}
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
                       <td
@@ -420,7 +484,7 @@ const UserDashboard = ({
                   Browse thousands of job openings from top companies.
                 </p>
                 <button
-                  onClick={() => handleTabChange("Jobs")}
+                  onClick={() => handleTabChange("Jobs", true)}
                   className="w-full bg-white text-indigo-600 py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg hover:bg-indigo-50 transition-all active:scale-95"
                 >
                   <Plus size={18} className="inline mr-2" strokeWidth={3} />
@@ -430,43 +494,48 @@ const UserDashboard = ({
               <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
             </div>
 
-            {/* Saved Jobs */}
+            {/* Jobs (quick apply) */}
             <Card
-              className={
-                theme === "dark" ? "bg-slate-800 border-slate-700" : ""
-              }
+              className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}
             >
               <div className="flex justify-between items-center mb-4">
-                <h4
-                  className={`font-black uppercase ${
-                    theme === "dark" ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  Saved Jobs
+                <h4 className={`font-black uppercase ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+                  Latest Jobs
                 </h4>
-                <button className="text-xs font-bold text-indigo-600">
+                <button onClick={() => handleTabChange("Jobs", true)} className="text-xs font-bold text-indigo-600">
                   View All
                 </button>
               </div>
               <div className="space-y-3">
-                {savedJobs.map((job) => (
-                  <div
-                    key={job.id}
-                    className="p-3 bg-gray-50 dark:bg-slate-700 rounded-xl"
-                  >
-                    <h5
-                      className={`font-bold text-sm ${
-                        theme === "dark" ? "text-white" : "text-gray-900"
-                      }`}
-                    >
-                      {job.jobTitle}
-                    </h5>
-                    <p className="text-xs text-gray-500">{job.company}</p>
+                {loadingJobs ? (
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="p-3 bg-gray-50 dark:bg-slate-700 rounded-xl animate-pulse h-12" />
+                    ))}
                   </div>
-                ))}
+                ) : jobs.length > 0 ? (
+                  jobs.map((job) => (
+                    <div key={job.id} className="p-3 bg-gray-50 dark:bg-slate-700 rounded-xl flex items-center justify-between">
+                      <div>
+                        <h5 className={`font-bold text-sm ${theme === "dark" ? "text-white" : "text-gray-900"}`}>{job.title || job.jobTitle || job.name}</h5>
+                        <p className="text-xs text-gray-500">{job.Company?.companyName || job.companyName || job.company || ""}</p>
+                      </div>
+                      <div>
+                        <Button size="sm" variant="primary" onClick={() => handleApply(job.id)}>
+                          Apply
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm text-gray-500">No jobs found</div>
+                )}
               </div>
             </Card>
           </div>
+        </div>
+        </>
+        )}
         </div>
       </div>
     </div>

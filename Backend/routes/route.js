@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const upload = multer();
+const fileUpload = require("../helpers/multer");
 
 const {
   getAllUser,
@@ -16,6 +17,8 @@ const {
   verifyOtp,
   resetPassword,
   changePassword,
+  uploadCV,
+  getUserProfile,
 } = require("../controllers/userController");
 
 const authGuard = require("../helpers/authguagrd");
@@ -26,6 +29,7 @@ router.post('/changepassword', authGuard, changePassword);
 
 router.post("/user", upload.none(), addUser);
 router.get("/me", authGuard, getMe);
+router.get("/profile", authGuard, getUserProfile);
 router.post("/forgotpassword", forgotPassword);
 router.post("/verifyotp", verifyOtp);
 router.post("/resetpassword", resetPassword);
@@ -36,5 +40,8 @@ router.get("/getactiveusers", authGuard, getActiveUsers);
 router.put("/updateuserbyid/:id", authGuard, updateUser);
 router.delete("/deleteuserbyid/:id", authGuard, isAdmin, deleteUser);
 router.post("/loginuser", logInUser);
+
+// CV Upload
+router.post("/upload-cv", authGuard, fileUpload("cv"), uploadCV);
 
 module.exports = router;

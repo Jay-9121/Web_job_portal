@@ -69,6 +69,18 @@ const User = sequelize.define(
       defaultValue: [],
       comment: "Array of job IDs saved by the user",
     },
+    // CV/Resume file path
+    cvPath: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: "Path to user's uploaded CV/Resume file",
+    },
+    // Profile picture file path
+    profilePicture: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: "Path to user's profile picture",
+    },
   },
   {
     // Enable automatic timestamps (createdAt, updatedAt)

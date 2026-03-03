@@ -109,6 +109,21 @@ describe("API smoke tests - 10 checks", () => {
     expect(Array.isArray(res.body.venues)).toBe(true);
   });
 
+  // job endpoint sanity checks
+  it("4b) job endpoint should return 400 for invalid id", async () => {
+    if (!serverAvailable) return;
+    const res = await request(BASE_URL).get("/api/jobs/undefined");
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+
+  it("4c) job endpoint should return 404 for non-existent id", async () => {
+    if (!serverAvailable) return;
+    const res = await request(BASE_URL).get("/api/jobs/999999");
+    // either 404 or 400 depending on validation; we expect 404 based on controller
+    expect([400, 404]).toContain(res.status);
+  });
+
   it("5) should create a booking for the user (if a venue exists)", async () => {
     if (!firstVenueId) {
       // no venue to book; mark test as passed by checking venues array was empty earlier

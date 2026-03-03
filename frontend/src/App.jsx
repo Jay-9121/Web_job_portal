@@ -20,6 +20,7 @@ import VerifyOtp from "./pages/VerifyOtp";
 import ResetPassword from "./pages/ResetPassword";
 import UserPages from "./pages/users";
 import JobDetails from "./pages/users/RestaurantDetails";
+import JobsListing from "./pages/jobs/JobsListing";
 import ProtectedRoute from "./protected/ProtectedRoute";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
@@ -82,6 +83,8 @@ function AppContent() {
     <Routes>
       {/* 2. Set Home as the default root page */}
       <Route path="/" element={<Home />} />
+
+      <Route path="/jobs" element={<JobsListing />} />
 
       <Route
         path="/login"

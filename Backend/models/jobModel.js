@@ -84,10 +84,11 @@ const Job = sequelize.define(
       comment: "Required experience level",
     },
     // Company that posted the job - foreign key
+    // nullable in case an admin manually creates a job without an associated company
     companyId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      comment: "Foreign key to Company table",
+      allowNull: true,
+      comment: "Foreign key to Company table (nullable for admin jobs)",
     },
     // Job status - active, closed, draft
     status: {
