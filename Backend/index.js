@@ -4,7 +4,6 @@ const { sequelize, connectDB } = require("./database/db");
 const path = require("path");
 const app = express();
 const port = 3000;
-const bookingRoutes = require("./routes/bookingRoute");
 
 const cors = require("cors");
 app.use(
@@ -15,6 +14,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Serve static uploads folder
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -70,7 +70,6 @@ Cuisine.belongsToMany(Restaurant, {
 
 app.use("/api/user/", require("./routes/route"));
 // app.use("/api", require("./routes/venueRoute"));
-app.use("/api", bookingRoutes);
 // Admin settings routes
 app.use("/api/admin", require("./routes/settingsRoute"));
 
@@ -79,9 +78,6 @@ app.use("/api/admin", require("./routes/settingsRoute"));
 
 // Dish routes
 // app.use("/api/dishes", require("./routes/dishRoute"));
-
-// Review routes
-app.use("/api/reviews", require("./routes/reviewRoute"));
 
 // ============== JOB PORTAL ROUTES ==============
 // Job routes

@@ -1,11 +1,18 @@
 const { Sequelize } = require("sequelize");
-require("dotenv").config();
+const path = require("path");
+
+// Load dotenv with explicit path to .env file in Backend folder
+require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
 
 // Validate required environment variables
 const dbName = process.env.DB_NAME;
 const dbUser = process.env.DB_USER;
 const dbPass = process.env.DB_PASS;
 const dbHost = process.env.DB_HOST;
+
+console.log("Loading database config from:", path.resolve(__dirname, "..", ".env"));
+console.log("DB_NAME:", dbName);
+console.log("DB_USER:", dbUser);
 
 if (!dbName || !dbUser || !dbPass || !dbHost) {
   console.error("Missing required database configuration:");

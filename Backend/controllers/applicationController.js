@@ -12,14 +12,17 @@ const { Op } = require("sequelize");
 const submitApplication = async (req, res) => {
   try {
     // Handle both JSON and multipart/form-data
-    const { jobId, coverLetter, skills, experience } = req.body;
+    let { jobId, coverLetter, skills, experience } = req.body;
     const userId = req.user.id;
 
+    // Ensure jobId is parsed as integer
+    jobId = parseInt(jobId, 10);
+
     // Validation
-    if (!jobId) {
+    if (!jobId || isNaN(jobId)) {
       return res.status(400).json({
         success: false,
-        message: "Job ID is required",
+        message: "Valid Job ID is required",
       });
     }
 

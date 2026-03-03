@@ -70,8 +70,13 @@ const UserDashboard = ({
         setLoadingApps(true);
 
         // fetch current user (to ensure auth) and their applications
+        console.log("[UserDashboard] Fetching user info via getMe()...");
         await getMe();
+        console.log("[UserDashboard] getMe() succeeded, now fetching applications...");
+        
         const appsRes = await getUserApplications();
+        console.log("[UserDashboard] getUserApplications() succeeded:", appsRes.data);
+        
         const apps = appsRes.data.applications || appsRes.data.applications || [];
         setApplications(apps);
 
@@ -113,7 +118,20 @@ const UserDashboard = ({
           },
         ]);
       } catch (err) {
-        console.error("Failed to load applications/stats", err);
+        console.error("[UserDashboard] Failed to load applications/stats:", {
+          status: err.response?.status,
+          message: err.response?.data?.message || err.message,
+          url: err.config?.url,
+          fullError: err,
+        });
+        // Set empty stats as fallback
+        setStats([
+          { label: "Applications", value: "0", icon: FileText, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "Accepted", value: "0", icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Pending", value: "0", icon: Clock, color: "text-yellow-600", bg: "bg-yellow-50" },
+          { label: "Rejected", value: "0", icon: XCircle, color: "text-rose-600", bg: "bg-rose-50" },
+        ]);
+        setApplications([]);
       } finally {
         setLoadingStats(false);
         setLoadingApps(false);

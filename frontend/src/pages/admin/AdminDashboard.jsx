@@ -16,6 +16,10 @@ import {
   Settings,
   Plus,
   X,
+  Calendar,
+  DollarSign,
+  Star,
+  Utensils,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import {
@@ -88,6 +92,20 @@ const AdminDashboard = ({ onLogout }) => {
     vacancies: 1,
   });
 
+  // Additional stats state
+  const [platformStats, setPlatformStats] = useState({
+    totalRestaurants: 0,
+    totalBookings: 0,
+    pendingBookings: 0,
+    bookingsToday: 0,
+    totalRevenue: 0,
+    totalReviews: 0,
+    averageRating: 0,
+  });
+  const [recentBookings, setRecentBookings] = useState([]);
+  const [recentReviews, setRecentReviews] = useState([]);
+  const [loadingPlatformStats, setLoadingPlatformStats] = useState(false);
+
   useEffect(() => {
     document.title = `Admin - ${activeTab}`;
   }, [activeTab]);
@@ -115,8 +133,19 @@ const AdminDashboard = ({ onLogout }) => {
       try {
         const statsResponse = await getDashboardStats();
         if (statsResponse.data.success) {
-          const { totalUsers, activeJobs, totalCompanies, totalApplications } =
-            statsResponse.data.stats;
+          const { 
+            totalUsers, 
+            activeJobs, 
+            totalCompanies, 
+            totalApplications,
+            totalRestaurants,
+            totalBookings,
+            pendingBookings,
+            bookingsToday,
+            totalRevenue,
+            totalReviews,
+            averageRating
+          } = statsResponse.data.stats;
 
           setStats([
             {
@@ -156,12 +185,25 @@ const AdminDashboard = ({ onLogout }) => {
               trendUp: true,
             },
           ]);
+
+          // Set platform stats (restaurants, bookings, reviews)
+          setPlatformStats({
+            totalRestaurants: totalRestaurants || 0,
+            totalBookings: totalBookings || 0,
+            pendingBookings: pendingBookings || 0,
+            bookingsToday: bookingsToday || 0,
+            totalRevenue: totalRevenue || 0,
+            totalReviews: totalReviews || 0,
+            averageRating: averageRating || 0,
+          });
         }
       } catch (statsError) {
         console.error("Error fetching stats:", statsError);
         const errorMsg = statsError.response?.data?.message || "Failed to load dashboard statistics";
         toast.error(errorMsg);
       }
+
+
 
       // Fetch recent applications
       if (activeTab === "Dashboard") {
@@ -461,23 +503,38 @@ const AdminDashboard = ({ onLogout }) => {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-indigo-200">
-                        Active Job Seekers
+                        <Utensils className="w-4 h-4 inline mr-1" />
+                        Restaurants
                       </span>
-                      <span className="font-black">1,234</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-indigo-200">Companies Hiring</span>
-                      <span className="font-black">89</span>
+                      <span className="font-black">{platformStats.totalRestaurants}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-indigo-200">
-                        Interviews This Week
+                        <Calendar className="w-4 h-4 inline mr-1" />
+                        Total Bookings
                       </span>
-                      <span className="font-black">156</span>
+                      <span className="font-black">{platformStats.totalBookings}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-indigo-200">Jobs Filled</span>
-                      <span className="font-black">45</span>
+                      <span className="text-indigo-200">
+                        <Clock className="w-4 h-4 inline mr-1" />
+                        Pending Bookings
+                      </span>
+                      <span className="font-black">{platformStats.pendingBookings}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-indigo-200">
+                        <DollarSign className="w-4 h-4 inline mr-1" />
+                        Total Revenue
+                      </span>
+                      <span className="font-black">${platformStats.totalRevenue.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-indigo-200">
+                        <Star className="w-4 h-4 inline mr-1" />
+                        Reviews
+                      </span>
+                      <span className="font-black">{platformStats.totalReviews}</span>
                     </div>
                   </div>
                 </div>

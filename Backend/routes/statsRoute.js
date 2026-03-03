@@ -28,3 +28,4 @@ router.delete("/saved-jobs/:jobId", authGuard, removeSavedJob);
 router.get("/all-applications", authGuard, isAdmin, getAllApplications);
 
 module.exports = router;
+

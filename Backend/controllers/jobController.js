@@ -102,34 +102,39 @@ const getAllJobs = async (req, res) => {
  */
 const getJobById = async (req, res) => {
   try {
-    let { id } = req.params;
-    id = parseInt(id, 10);
-
-    // validate ID
-    if (!id || isNaN(id)) {
+    // Get ID from params and validate
+    const { id } = req.params;
+    
+    // Validate ID parameter exists and is a valid number
+    if (!id) {
       return res.status(400).json({
         success: false,
-        message: "Invalid job ID",
+        message: "Job ID is required",
       });
     }
 
-    const job = await Job.findByPk(id, {
+    const jobId = parseInt(id, 10);
+    
+    if (isNaN(jobId) || jobId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid job ID format",
+      });
+    }
+
+    // Find job by primary key with Company association
+    const job = await Job.findByPk(jobId, {
       include: [
         {
           model: Company,
           as: "companyDetails",
-          attributes: [
-            "id",
-            ["companyName", "name"], // alias companyName -> name for frontend
-            "logo",
-            "location",
-            "website",
-            "description",
-          ],
+          attributes: ["id", "companyName", "logo", "location", "website", "description"],
+          required: false, // Allow job to exist without company (admin-created jobs)
         },
       ],
     });
 
+    // Return 404 if job not found
     if (!job) {
       return res.status(404).json({
         success: false,
@@ -137,17 +142,56 @@ const getJobById = async (req, res) => {
       });
     }
 
+    // Transform response to handle potential null company
+    const responseData = {
+      id: job.id,
+      title: job.title,
+      description: job.description,
+      salaryRange: job.salaryRange,
+      minSalary: job.minSalary,
+      maxSalary: job.maxSalary,
+      location: job.location,
+      jobType: job.jobType,
+      skillsRequired: job.skillsRequired || [],
+      experienceLevel: job.experienceLevel,
+      companyId: job.companyId,
+      status: job.status,
+      vacancies: job.vacancies,
+      deadline: job.deadline,
+      category: job.category,
+      createdAt: job.createdAt,
+      updatedAt: job.updatedAt,
+      // Safely handle company details (can be null)
+      company: job.companyDetails
+        ? {
+            id: job.companyDetails.id,
+            name: job.companyDetails.companyName,
+            logo: job.companyDetails.logo,
+            location: job.companyDetails.location,
+            website: job.companyDetails.website,
+            description: job.companyDetails.description,
+          }
+        : null,
+    };
+
     res.json({
       success: true,
-      job,
+      job: responseData,
       message: "Job fetched successfully",
     });
   } catch (error) {
-    console.error("Error in getJobById:", error);
+    // Log the actual error for debugging
+    console.error("Error in getJobById:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      originalError: error.original?.message || null,
+    });
+    
     res.status(500).json({
       success: false,
-      message: "Error fetching job",
-      error: error.message,
+      message: "Error fetching job details",
+      error: process.env.NODE_ENV === "development" ? error.message : "Internal Server Error",
     });
   }
 };

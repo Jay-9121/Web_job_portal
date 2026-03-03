@@ -2,6 +2,7 @@ const User = require("../models/usermodel");
 const Company = require("../models/companyModel");
 const Job = require("../models/jobModel");
 const Application = require("../models/applicationModel");
+const { Op } = require("sequelize");
 
 /**
  * Get public portal statistics (for home page)
@@ -37,16 +38,16 @@ const getPublicStats = async (req, res) => {
 
 /**
  * Get dashboard statistics (admin only)
- * Returns: total users, active jobs, companies, applications
+ * Returns: comprehensive stats including users, jobs, companies, applications
  */
 const getDashboardStats = async (req, res) => {
   try {
+    // Job Portal Stats
     const totalUsers = await User.count();
     const activeJobs = await Job.count({ where: { status: "active" } });
     const totalCompanies = await Company.count();
     const totalApplications = await Application.count();
-
-    // Get recent stats (we use "applied" as the initial application state)
+    
     const appliedApplications = await Application.count({
       where: { status: "applied" }
     });
@@ -58,12 +59,13 @@ const getDashboardStats = async (req, res) => {
     res.json({
       success: true,
       stats: {
+        // Job Portal
         totalUsers,
         activeJobs,
         totalCompanies,
         totalApplications,
         appliedApplications,
-        acceptedApplications
+        acceptedApplications,
       },
       message: "Dashboard stats fetched successfully"
     });
@@ -87,6 +89,9 @@ const getUserApplications = async (req, res) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
+    console.log("[getUserApplications] Fetching apps for userId:", userId);
+
+    // Fetch applications with job details
     const applications = await Application.findAll({
       where: { userId },
       include: [
@@ -114,6 +119,8 @@ const getUserApplications = async (req, res) => {
       order: [["createdAt", "DESC"]]
     });
 
+    console.log("[getUserApplications] Fetched", applications.length, "applications");
+
     res.json({
       success: true,
       applications,
@@ -121,7 +128,7 @@ const getUserApplications = async (req, res) => {
       message: "User applications fetched successfully"
     });
   } catch (error) {
-    console.error("Error in getUserApplications:", error);
+    console.error("[getUserApplications] Error:", error.message, error.stack);
     res.status(500).json({
       success: false,
       message: "Error fetching user applications",
@@ -351,3 +358,4 @@ module.exports = {
   removeSavedJob,
   getSavedJobs
 };
+
