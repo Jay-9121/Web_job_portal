@@ -137,6 +137,7 @@ import { PostJob, CompanyJobs, JobApplications } from "./pages/company";
 <Route path="/my-applications" element={<MyApplications />} />
 <Route path="/company/post-job" element={<PostJob />} />
 <Route path="/company/jobs" element={<CompanyJobs />} />
+<Route path="/company/job/:jobId/edit" element={<PostJob />} /> <!-- new: edit existing job -->
 <Route path="/company/job/:jobId/applications" element={<JobApplications />} />
 ```
 

@@ -320,7 +320,7 @@ const getApplicationById = async (req, res) => {
 };
 
 /**
- * Update application status (for company)
+ * Update application status (for company or admin)
  * Statuses: applied, shortlisted, rejected, accepted, withdrawn
  */
 const updateApplicationStatus = async (req, res) => {
@@ -350,12 +350,22 @@ const updateApplicationStatus = async (req, res) => {
       });
     }
 
+    // Check if user is admin - admin can update any application status
+    if (req.user.role === "admin") {
+      await application.update({ status });
+      return res.json({
+        success: true,
+        application,
+        message: "Application status updated successfully by admin",
+      });
+    }
+
     // Check if user is company and owns this job
     const job = await Job.findByPk(application.jobId);
     if (req.user.role !== "company") {
       return res.status(403).json({
         success: false,
-        message: "Only company representatives can update application status",
+        message: "Only company representatives or admins can update application status",
       });
     }
 

@@ -21,6 +21,10 @@ import ResetPassword from "./pages/ResetPassword";
 import UserPages from "./pages/users";
 import JobDetails from "./pages/users/RestaurantDetails";
 import JobsListing from "./pages/jobs/JobsListing";
+
+// company-side job portal pages
+import { PostJob, CompanyJobs, JobApplications } from "./pages/company";
+
 import ProtectedRoute from "./protected/ProtectedRoute";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 
@@ -85,6 +89,32 @@ function AppContent() {
       <Route path="/" element={<Home />} />
 
       <Route path="/jobs" element={<JobsListing />} />
+
+      {/* company-only job management */}
+      <Route
+        path="/company/post-job"
+        element={
+          <ProtectedRoute role="company" element={<PostJob />} />
+        }
+      />
+      <Route
+        path="/company/jobs"
+        element={
+          <ProtectedRoute role="company" element={<CompanyJobs />} />
+        }
+      />
+      <Route
+        path="/company/job/:jobId/edit"
+        element={
+          <ProtectedRoute role="company" element={<PostJob />} />
+        }
+      />
+      <Route
+        path="/company/job/:jobId/applications"
+        element={
+          <ProtectedRoute role="company" element={<JobApplications />} />
+        }
+      />
 
       <Route
         path="/login"

@@ -138,7 +138,14 @@ app.use((err, req, res, next) => {
 
 const startServer = async () => {
   await connectDB();
-  await sequelize.sync({ force: true });
+  // by default do not drop tables on restart; only force sync when
+  // explicit environment variable is set (dev convenience)
+  const syncOptions = {};
+  if (process.env.NODE_ENV !== "production" && process.env.DB_FORCE_SYNC === "true") {
+    syncOptions.force = true;
+    console.log("⚠️ Forcing database sync (tables will be dropped)");
+  }
+  await sequelize.sync(syncOptions);
 
   // Development convenience: auto-create an admin if none exists
   if (process.env.NODE_ENV !== "production") {

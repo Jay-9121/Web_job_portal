@@ -6,6 +6,7 @@ import {
   LogOut,
   MapPin,
   ShieldCheck,
+  FileText,
 } from "lucide-react";
 
 const AdminNav = ({ activeTab, setActiveTab, onLogout }) => {
@@ -13,7 +14,8 @@ const AdminNav = ({ activeTab, setActiveTab, onLogout }) => {
     { name: "Dashboard", icon: LayoutDashboard },
     { name: "Users", icon: Users },
     { name: "Jobs", icon: ShieldCheck },
-    { name: "Companies", icon: MapPin },
+    { name: "Application", icon: MapPin },
+    { name: "Applications", icon: FileText },
     { name: "Settings", icon: Settings },
   ];
 

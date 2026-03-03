@@ -281,7 +281,7 @@ The application will create all tables automatically on first run.
 
 2. **CORS**: Frontend origins configured: `http://localhost:5173`, `http://localhost:5174`
 
-3. **Database Sync**: Uses `sequelize.sync({ force: true })` - drops and recreates tables on restart (development only)
+3. **Database Sync**: By default `sequelize.sync()` runs without `force` so data persists between restarts. In development you can still drop/recreate tables by setting `DB_FORCE_SYNC=true` (in `.env`) or `NODE_ENV` not production. This keeps test data intact unless explicitly reset.
 
 4. **File Uploads**: If needed, uploads folder is served at `/uploads`
 

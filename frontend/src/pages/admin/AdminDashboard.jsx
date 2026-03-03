@@ -25,6 +25,7 @@ import {
   getDashboardStats,
   getAllApplications,
   createJob,
+  updateJob,
   getMe,
   getAllUsers,
   getAllJobs,
@@ -63,7 +64,7 @@ const AdminDashboard = ({ onLogout }) => {
       trendUp: true,
     },
     {
-      label: "Companies",
+      label: "Application",
       value: "0",
       icon: Building2,
       color: "text-purple-600",
@@ -85,6 +86,8 @@ const AdminDashboard = ({ onLogout }) => {
   const [recentApplications, setRecentApplications] = useState([]);
   const [user, setUser] = useState(null);
   const [showJobModal, setShowJobModal] = useState(false);
+  const [showEditJobModal, setShowEditJobModal] = useState(false);
+  const [editingJob, setEditingJob] = useState(null);
   const [jobSubmitting, setJobSubmitting] = useState(false);
   const [selectedApplicationForDetail, setSelectedApplicationForDetail] = useState(null);
   const [jobForm, setJobForm] = useState({
@@ -188,7 +191,7 @@ const AdminDashboard = ({ onLogout }) => {
               trendUp: true,
             },
             {
-              label: "Companies",
+              label: "Application",
               value: totalCompanies.toString(),
               icon: Building2,
               color: "text-purple-600",
@@ -398,6 +401,62 @@ const AdminDashboard = ({ onLogout }) => {
     }
   };
 
+  // Handle update job
+  const handleUpdateJob = async (e) => {
+    e.preventDefault();
+
+    if (!editingJob || !jobForm.title || !jobForm.description || !jobForm.location) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    try {
+      setJobSubmitting(true);
+
+      const submitData = {
+        ...jobForm,
+        skillsRequired: jobForm.skillsRequired
+          ? jobForm.skillsRequired.split(",").map((s) => s.trim())
+          : [],
+        minSalary: jobForm.minSalary ? parseInt(jobForm.minSalary) : null,
+        maxSalary: jobForm.maxSalary ? parseInt(jobForm.maxSalary) : null,
+        vacancies: parseInt(jobForm.vacancies) || 1,
+      };
+
+      const response = await updateJob(editingJob.id, submitData);
+
+      if (response.data.success) {
+        toast.success("Job updated successfully!");
+        setShowEditJobModal(false);
+        setEditingJob(null);
+        setJobForm({
+          title: "",
+          description: "",
+          location: "",
+          jobType: "full-time",
+          experienceLevel: "mid",
+          salaryRange: "",
+          minSalary: "",
+          maxSalary: "",
+          skillsRequired: "",
+          vacancies: 1,
+        });
+        // Refresh jobs list
+        fetchJobs();
+      }
+    } catch (error) {
+      console.error("Error updating job:", {
+        status: error.response?.status,
+        message: error.response?.data?.message,
+        fullError: error
+      });
+      const errorMsg = error.response?.data?.message || "Failed to update job. Please try again.";
+      toast.error(errorMsg);
+    } finally {
+      setJobSubmitting(false);
+    }
+  };
+
   // Handle approve company
   const handleApproveCompany = async (companyId) => {
     try {
@@ -457,13 +516,13 @@ const AdminDashboard = ({ onLogout }) => {
     }
   };
 
-  // Fetch data when switching to Users, Jobs, Companies or Applications tabs
+  // Fetch data when switching to Users, Jobs, Application or Applications tabs
   useEffect(() => {
     if (activeTab === "Users") {
       fetchUsers();
     } else if (activeTab === "Jobs") {
       fetchJobs();
-    } else if (activeTab === "Companies") {
+    } else if (activeTab === "Application") {
       fetchCompanies();
     } else if (activeTab === "Applications") {
       fetchApplications();
@@ -936,6 +995,27 @@ const AdminDashboard = ({ onLogout }) => {
                       </div>
                       <div className="flex gap-2">
                         <button
+                          onClick={() => {
+                            setEditingJob(job);
+                            setJobForm({
+                              title: job.title || "",
+                              description: job.description || "",
+                              location: job.location || "",
+                              jobType: job.jobType || "full-time",
+                              experienceLevel: job.experienceLevel || "mid",
+                              salaryRange: job.salaryRange || "",
+                              minSalary: job.minSalary || "",
+                              maxSalary: job.maxSalary || "",
+                              skillsRequired: job.skillsRequired ? job.skillsRequired.join(", ") : "",
+                              vacancies: job.vacancies || 1,
+                            });
+                            setShowEditJobModal(true);
+                          }}
+                          className="px-3 py-1 text-sm text-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-50"
+                        >
+                          Edit
+                        </button>
+                        <button
                           onClick={() => handleDeleteJob(job.id)}
                           className="px-3 py-1 text-sm text-red-500 border border-red-500 rounded-lg hover:bg-red-50"
                         >
@@ -964,7 +1044,7 @@ const AdminDashboard = ({ onLogout }) => {
             )}
           </Card>
         );
-      case "Companies":
+      case "Application":
         return (
           <Card className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}>
             <div className="flex justify-between items-center mb-6">
@@ -1121,10 +1201,10 @@ const AdminDashboard = ({ onLogout }) => {
                         </div>
                         <div className="mt-3">
                           <p className={`text-sm font-medium ${theme === "dark" ? "text-indigo-400" : "text-indigo-600"}`}>
-                            Applied for: {app.Job?.title || "Unknown Job"}
+                            Applied for: {app.jobDetails?.title || "Unknown Job"}
                           </p>
                           <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"}`}>
-                            Company: {app.Job?.Company?.name || "Unknown Company"}
+                            Company: {app.jobDetails?.companyDetails?.name || "Unknown Company"}
                           </p>
                         </div>
                         <div className="flex gap-2 mt-2">
@@ -1475,6 +1555,262 @@ const AdminDashboard = ({ onLogout }) => {
                     </>
                   ) : (
                     "Create Job"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Job Modal */}
+      {showEditJobModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div
+            className={`rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ${
+              theme === "dark" ? "bg-slate-800" : "bg-white"
+            }`}
+          >
+            {/* Modal Header */}
+            <div
+              className={`flex justify-between items-center p-6 border-b ${
+                theme === "dark"
+                  ? "border-slate-700 text-white"
+                  : "border-gray-100"
+              }`}
+            >
+              <h2 className="text-2xl font-bold">Edit Job</h2>
+              <button
+                onClick={() => {
+                  setShowEditJobModal(false);
+                  setEditingJob(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleUpdateJob} className="p-6 space-y-4">
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${
+                  theme === "dark" ? "text-gray-300" : "text-gray-700"
+                }`}>
+                  Job Title *
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={jobForm.title}
+                  onChange={handleJobInputChange}
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                    theme === "dark"
+                      ? "bg-slate-700 border-slate-600 text-white"
+                      : "bg-white border-gray-300"
+                  }`}
+                  placeholder="e.g., Senior React Developer"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${
+                  theme === "dark" ? "text-gray-300" : "text-gray-700"
+                }`}>
+                  Description *
+                </label>
+                <textarea
+                  name="description"
+                  value={jobForm.description}
+                  onChange={handleJobInputChange}
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                    theme === "dark"
+                      ? "bg-slate-700 border-slate-600 text-white"
+                      : "bg-white border-gray-300"
+                  }`}
+                  placeholder="Enter job description"
+                  rows="4"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                    Location *
+                  </label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={jobForm.location}
+                    onChange={handleJobInputChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                      theme === "dark"
+                        ? "bg-slate-700 border-slate-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                    placeholder="e.g., Remote"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                    Job Type
+                  </label>
+                  <select
+                    name="jobType"
+                    value={jobForm.jobType}
+                    onChange={handleJobInputChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                      theme === "dark"
+                        ? "bg-slate-700 border-slate-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  >
+                    <option value="full-time">Full-time</option>
+                    <option value="part-time">Part-time</option>
+                    <option value="contract">Contract</option>
+                    <option value="internship">Internship</option>
+                    <option value="freelance">Freelance</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                    Experience Level
+                  </label>
+                  <select
+                    name="experienceLevel"
+                    value={jobForm.experienceLevel}
+                    onChange={handleJobInputChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                      theme === "dark"
+                        ? "bg-slate-700 border-slate-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  >
+                    <option value="entry">Entry Level</option>
+                    <option value="mid">Mid Level</option>
+                    <option value="senior">Senior</option>
+                    <option value="lead">Lead</option>
+                    <option value="executive">Executive</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                    Vacancies
+                  </label>
+                  <input
+                    type="number"
+                    name="vacancies"
+                    value={jobForm.vacancies}
+                    onChange={handleJobInputChange}
+                    min="1"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                      theme === "dark"
+                        ? "bg-slate-700 border-slate-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                    Min Salary
+                  </label>
+                  <input
+                    type="number"
+                    name="minSalary"
+                    value={jobForm.minSalary}
+                    onChange={handleJobInputChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                      theme === "dark"
+                        ? "bg-slate-700 border-slate-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                    placeholder="50000"
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                    Max Salary
+                  </label>
+                  <input
+                    type="number"
+                    name="maxSalary"
+                    value={jobForm.maxSalary}
+                    onChange={handleJobInputChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                      theme === "dark"
+                        ? "bg-slate-700 border-slate-600 text-white"
+                        : "bg-white border-gray-300"
+                    }`}
+                    placeholder="80000"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${
+                  theme === "dark" ? "text-gray-300" : "text-gray-700"
+                }`}>
+                  Skills Required (comma separated)
+                </label>
+                <input
+                  type="text"
+                  name="skillsRequired"
+                  value={jobForm.skillsRequired}
+                  onChange={handleJobInputChange}
+                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 ${
+                    theme === "dark"
+                      ? "bg-slate-700 border-slate-600 text-white"
+                      : "bg-white border-gray-300"
+                  }`}
+                  placeholder="e.g., React, Node.js, MongoDB"
+                />
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex gap-3 pt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditJobModal(false);
+                    setEditingJob(null);
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={jobSubmitting}
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {jobSubmitting ? (
+                    <>
+                      <Spinner size={16} />
+                      Updating...
+                    </>
+                  ) : (
+                    "Update Job"
                   )}
                 </button>
               </div>

@@ -142,10 +142,16 @@ const getUserApplications = async (req, res) => {
  */
 const getAllApplications = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, status } = req.query;
     const offset = (page - 1) * limit;
 
+    const whereConditions = {};
+    if (status && status !== "all") {
+      whereConditions.status = status;
+    }
+
     const applications = await Application.findAndCountAll({
+      where: whereConditions,
       include: [
         {
           model: Job,

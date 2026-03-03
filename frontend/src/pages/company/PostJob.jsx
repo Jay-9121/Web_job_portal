@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { createJob, getMe } from "../../services/api";
+import { useNavigate, useParams } from "react-router-dom";
+import { createJob, getMe, getJobById, updateJob } from "../../services/api"; // add fetching and update
 
 export default function PostJob() {
   const navigate = useNavigate();
+  const { jobId } = useParams(); // if present we're editing
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -20,6 +21,41 @@ export default function PostJob() {
     experienceLevel: "mid",
     vacancies: 1,
   });
+
+  // if editing, load existing job details
+  useEffect(() => {
+    if (jobId) {
+      loadJob();
+    }
+  }, [jobId]);
+
+  const loadJob = async () => {
+    try {
+      setLoading(true);
+      const resp = await getJobById(jobId);
+      if (resp.data.success) {
+        const job = resp.data.job;
+        setFormData({
+          title: job.title || "",
+          description: job.description || "",
+          salaryRange: job.salaryRange || "",
+          minSalary: job.minSalary || "",
+          maxSalary: job.maxSalary || "",
+          location: job.location || "",
+          jobType: job.jobType || "full-time",
+          skillsRequired: (job.skillsRequired || []).join(", "),
+          experienceLevel: job.experienceLevel || "mid",
+          vacancies: job.vacancies || 1,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load job for editing", err);
+      alert("Unable to load job details");
+      navigate("/company/jobs");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     checkUserAuth();
@@ -75,14 +111,20 @@ export default function PostJob() {
         vacancies: parseInt(formData.vacancies) || 1,
       };
 
-      const response = await createJob(submitData);
+      let response;
+      if (jobId) {
+        // updating existing job
+        response = await updateJob(jobId, submitData);
+      } else {
+        response = await createJob(submitData);
+      }
 
       if (response.data.success) {
-        alert("Job posted successfully!");
+        alert(jobId ? "Job updated successfully!" : "Job posted successfully!");
         navigate("/company/jobs");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to post job");
+      setError(err.response?.data?.message || (jobId ? "Failed to update job" : "Failed to post job"));
     } finally {
       setSubmitting(false);
     }
@@ -98,7 +140,19 @@ export default function PostJob() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <h1 className="text-3xl font-bold mb-6">Post a New Job</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">
+          {jobId ? "Edit Job" : "Post a New Job"}
+        </h1>
+        {jobId && (
+          <button
+            onClick={() => navigate("/company/jobs")}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -270,7 +324,7 @@ export default function PostJob() {
           disabled={submitting}
           className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-semibold"
         >
-          {submitting ? "Posting..." : "Post Job"}
+          {submitting ? (jobId ? "Updating..." : "Posting...") : jobId ? "Update Job" : "Post Job"}
         </button>
       </form>
     </div>
