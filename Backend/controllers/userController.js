@@ -249,6 +249,16 @@ const forgotPassword = async (req, res) => {
 
     await user.update({ resetPasswordToken: hashedOtp, resetPasswordExpires: new Date(expires) });
 
+    // debug logging - show OTP/hash/expiry when in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('forgotPassword: generated OTP', {
+        email: user.email,
+        otp,
+        hashedOtp,
+        expires: new Date(expires).toISOString(),
+      });
+    }
+
     // Send OTP via email
     try {
       await sendResetEmail(user.email, otp, user.username);
@@ -274,11 +284,20 @@ const verifyOtp = async (req, res) => {
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
     const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
+
+    // debug logging to help diagnose invalid/expired reports
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('verifyOtp:', { email, otp, hashedOtp, storedToken: user.resetPasswordToken });
+    }
+
     if (!user.resetPasswordToken || user.resetPasswordToken !== hashedOtp) {
       return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
     }
 
     if (user.resetPasswordExpires && new Date(user.resetPasswordExpires) < new Date()) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('verifyOtp: OTP expired', { storedExpiry: user.resetPasswordExpires });
+      }
       return res.status(400).json({ success: false, message: 'OTP has expired' });
     }
 
@@ -290,7 +309,7 @@ const verifyOtp = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const { email, newPassword, resetToken } = req.body;
+    const { email, otp, password } = req.body; // front end sends these names
 
     if (!email || !otp || !password) {
       return res.status(400).json({ success: false, message: "All fields are required" });

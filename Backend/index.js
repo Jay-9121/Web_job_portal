@@ -138,10 +138,23 @@ app.use((err, req, res, next) => {
 
 const startServer = async () => {
   await connectDB();
-  // by default do not drop tables on restart; only force sync when
-  // explicit environment variable is set (dev convenience)
+  // by default do not modify existing tables on restart. Altering during
+  // sync can sometimes generate invalid SQL (Postgres doesn't allow adding
+  // UNIQUE inline) so we only enable it when the developer explicitly asks
+  // for it via DB_ALTER_SYNC=true. For destructive updates use
+  // DB_FORCE_SYNC=true which drops/recreates all tables.
   const syncOptions = {};
-  if (process.env.NODE_ENV !== "production" && process.env.DB_FORCE_SYNC === "true") {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.DB_ALTER_SYNC === "true"
+  ) {
+    syncOptions.alter = true;
+    console.log("🔧 Running sequelize.sync({ alter: true })");
+  }
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.DB_FORCE_SYNC === "true"
+  ) {
     syncOptions.force = true;
     console.log("⚠️ Forcing database sync (tables will be dropped)");
   }

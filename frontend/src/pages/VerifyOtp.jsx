@@ -54,7 +54,9 @@ const VerifyOtp = () => {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await verifyOtp(email, otp);
+      // make sure we don't accidentally send whitespace or other characters
+      const trimmedOtp = otp.trim();
+      const res = await verifyOtp(email, trimmedOtp);
       setMessage({
         type: "success",
         text: res.data.message || "OTP verified successfully",

@@ -81,6 +81,17 @@ const User = sequelize.define(
       allowNull: true,
       comment: "Path to user's profile picture",
     },
+    // Fields used for password reset flow
+    resetPasswordToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: "Hashed OTP/token for password reset",
+    },
+    resetPasswordExpires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: "Expiration timestamp for the reset token",
+    },
   },
   {
     // Enable automatic timestamps (createdAt, updatedAt)
