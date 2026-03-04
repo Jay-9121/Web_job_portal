@@ -218,7 +218,7 @@ export default function JobDetails() {
             </div>
           </div>
 
-          {/* Skills Required */}
+          {/* Skills Required - Moved up for better visibility */}
           {job.skillsRequired && job.skillsRequired.length > 0 && (
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h2 className="text-2xl font-bold mb-4 text-gray-800">Required Skills</h2>

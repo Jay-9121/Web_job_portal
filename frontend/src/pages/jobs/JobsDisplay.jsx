@@ -658,7 +658,7 @@ const JobsDisplay = ({ onNavigate = null }) => {
                   </div>
 
                   {/* Meta Info */}
-                  <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
+                  <div className="space-y-3 mb-4 pb-4 border-b border-gray-200">
                     <div className="flex items-center gap-3">
                       <MapPin size={18} className="text-indigo-600" />
                       <span
@@ -696,46 +696,31 @@ const JobsDisplay = ({ onNavigate = null }) => {
                     </div>
                   </div>
 
-                  {/* Description */}
-                  <div className="mb-6">
-                    <h3
-                      className={`font-bold mb-3 ${
-                        theme === "dark" ? "text-white" : "text-gray-900"
-                      }`}
-                    >
-                      About the Job
-                    </h3>
-                    <p
-                      className={`text-sm leading-relaxed ${
-                        theme === "dark" ? "text-gray-300" : "text-gray-600"
-                      }`}
-                    >
-                      {selectedJob.description}
-                    </p>
-                  </div>
-
-                  {/* Requirements */}
-                  {selectedJob.requirements && (
-                    <div className="mb-6">
+                  {/* Skills Required */}
+                  {selectedJob.skillsRequired && selectedJob.skillsRequired.length > 0 && (
+                    <div className="mb-4 pb-4 border-b border-gray-200">
                       <h3
                         className={`font-bold mb-3 ${
                           theme === "dark" ? "text-white" : "text-gray-900"
                         }`}
                       >
-                        Requirements
+                        Skills Required
                       </h3>
-                      <p
-                        className={`text-sm leading-relaxed ${
-                          theme === "dark" ? "text-gray-300" : "text-gray-600"
-                        }`}
-                      >
-                        {selectedJob.requirements}
-                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedJob.skillsRequired.map((skill, index) => (
+                          <span
+                            key={index}
+                            className="inline-block bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium border border-blue-200"
+                          >
+                            ✓ {skill}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
 
-                  {/* Footer Actions */}
-                  <div className="mt-auto pt-6 border-t border-gray-200 space-y-3">
+                  {/* Apply Button - Moved up for better visibility */}
+                  <div className="mb-4 pb-4 border-b border-gray-200 space-y-3">
                     <Button
                       fullWidth
                       variant="primary"
@@ -771,6 +756,24 @@ const JobsDisplay = ({ onNavigate = null }) => {
                         Share
                       </Button>
                     </div>
+                  </div>
+
+                  {/* Description */}
+                  <div className="mb-6">
+                    <h3
+                      className={`font-bold mb-3 ${
+                        theme === "dark" ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      About the Job
+                    </h3>
+                    <p
+                      className={`text-sm leading-relaxed ${
+                        theme === "dark" ? "text-gray-300" : "text-gray-600"
+                      }`}
+                    >
+                      {selectedJob.description}
+                    </p>
                   </div>
                 </>
               )}

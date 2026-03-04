@@ -545,6 +545,206 @@ const AdminDashboard = ({ onLogout }) => {
   };
 
   const renderContent = () => {
+    // Application Detail Drawer - show on top of any tab
+    if (selectedApplicationForDetail) {
+      const app = selectedApplicationForDetail;
+      return (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4">
+          <div className="w-full max-w-3xl bg-white rounded-t-xl md:rounded-xl shadow-lg overflow-y-auto max-h-[90vh]">
+            <div className="p-6 border-b flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-bold">Application Details</h3>
+                <p className="text-sm text-gray-500">{app.applicant?.username} applied for {app.jobDetails?.title || app.Job?.title}</p>
+              </div>
+              <button onClick={() => setSelectedApplicationForDetail(null)} className="text-gray-500 hover:text-gray-700">Close</button>
+            </div>
+            <div className="p-6 space-y-6">
+              {/* Applicant Information */}
+              <div>
+                <h4 className="font-semibold text-lg mb-3 border-b pb-2">Applicant Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Name</p>
+                    <p className="font-medium">{app.applicant?.username || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Email</p>
+                    <p className="font-medium">{app.applicant?.email || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Phone</p>
+                    <p className="font-medium">{app.phone || app.applicant?.phoneNumber || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Location</p>
+                    <p className="font-medium">{app.applicant?.location || "Not provided"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Job Applied For */}
+              <div>
+                <h4 className="font-semibold text-lg mb-3 border-b pb-2">Job Details</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Job Title</p>
+                    <p className="font-medium">{app.jobDetails?.title || app.Job?.title || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Company</p>
+                    <p className="font-medium">{app.jobDetails?.companyDetails?.name || app.Job?.Company?.name || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Location</p>
+                    <p className="font-medium">{app.jobDetails?.location || app.Job?.location || "Not provided"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Job Type</p>
+                    <p className="font-medium">{app.jobDetails?.jobType || app.Job?.jobType || "Not provided"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cover Letter */}
+              <div>
+                <h4 className="font-semibold text-lg mb-3 border-b pb-2">Cover Letter</h4>
+                <div className="bg-gray-50 p-4 rounded text-sm text-gray-700 whitespace-pre-wrap">
+                  {app.coverLetter || "No cover letter provided"}
+                </div>
+              </div>
+
+              {/* Resume/CV */}
+              {app.resume && (
+                <div>
+                  <h4 className="font-semibold text-lg mb-3 border-b pb-2">Resume/CV</h4>
+                  <a 
+                    href={`http://localhost:3000${app.resume}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    View Resume
+                  </a>
+                </div>
+              )}
+
+              {/* Skills & qualifications */}
+              {(app.skills && app.skills.length > 0) && (
+                <div>
+                  <h4 className="font-semibold text-lg mb-3 border-b pb-2">Skills & Qualifications</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {app.skills.map((skill, idx) => (
+                      <span key={idx} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Work Experience */}
+              {(app.experience && app.experience.length > 0) && (
+                <div>
+                  <h4 className="font-semibold text-lg mb-3 border-b pb-2">Work Experience</h4>
+                  <div className="space-y-4">
+                    {app.experience.map((exp, idx) => (
+                      <div key={idx} className="bg-gray-50 p-4 rounded border-l-4 border-blue-400">
+                        <p className="font-semibold">{exp.position}</p>
+                        <p className="text-gray-600 text-sm">{exp.company} • {exp.duration}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Links */}
+              <div>
+                <h4 className="font-semibold text-lg mb-3 border-b pb-2">Additional Links</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">LinkedIn</p>
+                    {app.linkedIn ? (
+                      <a 
+                        href={app.linkedIn} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        {app.linkedIn}
+                      </a>
+                    ) : (
+                      <p className="text-gray-400">Not provided</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Portfolio/GitHub</p>
+                    {app.portfolio ? (
+                      <a 
+                        href={app.portfolio} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        {app.portfolio}
+                      </a>
+                    ) : (
+                      <p className="text-gray-400">Not provided</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Application Status & Date */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div>
+                  <p className="text-sm text-gray-500">Applied Date</p>
+                  <p className="font-medium">{new Date(app.createdAt).toLocaleString()}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-500">Status</p>
+                  <div className="mt-1">{getStatusBadge(app.status)}</div>
+                </div>
+              </div>
+
+              {/* Admin Actions */}
+              <div className="flex flex-wrap gap-2 pt-4 border-t">
+                <button
+                  onClick={() => {
+                    handleUpdateApplicationStatus(app.id, "shortlisted");
+                    setSelectedApplicationForDetail(null);
+                  }}
+                  className="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200"
+                >
+                  Shortlist
+                </button>
+                <button
+                  onClick={() => {
+                    handleUpdateApplicationStatus(app.id, "accepted");
+                    setSelectedApplicationForDetail(null);
+                  }}
+                  className="px-4 py-2 bg-green-100 text-green-800 rounded-lg hover:bg-green-200"
+                >
+                  Accept
+                </button>
+                <button
+                  onClick={() => {
+                    handleUpdateApplicationStatus(app.id, "rejected");
+                    setSelectedApplicationForDetail(null);
+                  }}
+                  className="px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200"
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case "Dashboard":
         return (
@@ -815,64 +1015,6 @@ const AdminDashboard = ({ onLogout }) => {
             </div>
           </div>
         );
-      
-      // Application Detail Drawer
-      if (selectedApplicationForDetail) {
-        const app = selectedApplicationForDetail;
-        return (
-          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4">
-            <div className="w-full max-w-3xl bg-white rounded-t-xl md:rounded-xl shadow-lg overflow-y-auto max-h-[90vh]">
-              <div className="p-6 border-b flex justify-between items-start">
-                <div>
-                  <h3 className="text-xl font-bold">Application Details</h3>
-                  <p className="text-sm text-gray-500">{app.applicant?.username} applied for {app.jobDetails?.title}</p>
-                </div>
-                <button onClick={() => setSelectedApplicationForDetail(null)} className="text-gray-500 hover:text-gray-700">Close</button>
-              </div>
-              <div className="p-6 space-y-4">
-                <div>
-                  <h4 className="font-semibold">Cover Letter</h4>
-                  <div className="mt-2 bg-gray-50 p-3 rounded text-sm text-gray-700 whitespace-pre-wrap">{app.coverLetter || "No cover letter provided"}</div>
-                </div>
-
-                {app.skills && app.skills.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold">Skills & Qualifications</h4>
-                    <ul className="mt-2 list-disc list-inside text-sm text-gray-700">
-                      {app.skills.map((s, i) => <li key={i}>{s}</li>)}
-                    </ul>
-                  </div>
-                )}
-
-                {app.experience && app.experience.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold">Work Experience</h4>
-                    <div className="mt-2 space-y-2">
-                      {app.experience.map((e, i) => (
-                        <div key={i} className="text-sm">
-                          <p className="font-medium">{e.position}</p>
-                          <p className="text-gray-600 text-sm">{e.company} • {e.duration}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4 pt-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Applied</p>
-                    <p className="font-medium">{new Date(app.createdAt).toLocaleString()}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-500">Status</p>
-                    <div className="mt-1">{getStatusBadge(app.status)}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      }
       case "Users":
         return (
           <Card className={theme === "dark" ? "bg-slate-800 border-slate-700" : ""}>

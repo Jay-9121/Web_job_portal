@@ -175,8 +175,25 @@ const getAllApplications = async (req, res) => {
         {
           model: User,
           as: "applicant",
-          attributes: ["id", "username", "email", "phoneNumber"]
+          attributes: ["id", "username", "email", "phoneNumber", "location"]
         }
+      ],
+      attributes: [
+        "id",
+        "userId",
+        "jobId",
+        "coverLetter",
+        "resume",
+        "status",
+        "notes",
+        "interviewDate",
+        "phone",
+        "linkedIn",
+        "portfolio",
+        "skills",
+        "experience",
+        "createdAt",
+        "updatedAt"
       ],
       order: [["createdAt", "DESC"]],
       limit: parseInt(limit),
