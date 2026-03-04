@@ -295,23 +295,26 @@ const updateJob = async (req, res) => {
       });
     }
 
-    // Check if user is company and owns this job
-    if (req.user.role !== "company") {
+    // Check if user is company or admin - admins can update any job
+    if (req.user.role !== "company" && req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
         message: "Only company representatives can update jobs",
       });
     }
 
-    const company = await Company.findOne({
-      where: { userId: req.user.id },
-    });
-
-    if (!company || job.companyId !== company.id) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only update your own jobs",
+    // For company users, check ownership; admins can update any job
+    if (req.user.role === "company") {
+      const company = await Company.findOne({
+        where: { userId: req.user.id },
       });
+
+      if (!company || job.companyId !== company.id) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only update your own jobs",
+        });
+      }
     }
 
     // Update job
@@ -347,23 +350,26 @@ const deleteJob = async (req, res) => {
       });
     }
 
-    // Check if user is company and owns this job
-    if (req.user.role !== "company") {
+    // Check if user is company or admin - admins can delete any job
+    if (req.user.role !== "company" && req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
         message: "Only company representatives can delete jobs",
       });
     }
 
-    const company = await Company.findOne({
-      where: { userId: req.user.id },
-    });
-
-    if (!company || job.companyId !== company.id) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only delete your own jobs",
+    // For company users, check ownership; admins can delete any job
+    if (req.user.role === "company") {
+      const company = await Company.findOne({
+        where: { userId: req.user.id },
       });
+
+      if (!company || job.companyId !== company.id) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only delete your own jobs",
+        });
+      }
     }
 
     await job.destroy();
@@ -397,23 +403,26 @@ const closeJob = async (req, res) => {
       });
     }
 
-    // Check permissions
-    if (req.user.role !== "company") {
+    // Check permissions - admins can close any job
+    if (req.user.role !== "company" && req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
         message: "Only company representatives can close jobs",
       });
     }
 
-    const company = await Company.findOne({
-      where: { userId: req.user.id },
-    });
-
-    if (!company || job.companyId !== company.id) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only close your own jobs",
+    // For company users, check ownership; admins can close any job
+    if (req.user.role === "company") {
+      const company = await Company.findOne({
+        where: { userId: req.user.id },
       });
+
+      if (!company || job.companyId !== company.id) {
+        return res.status(403).json({
+          success: false,
+          message: "You can only close your own jobs",
+        });
+      }
     }
 
     await job.update({ status: "closed" });

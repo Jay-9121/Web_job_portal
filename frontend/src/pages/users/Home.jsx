@@ -87,7 +87,7 @@ const Home = () => {
             </button>
             <button
               onClick={() => navigate("/login")}
-              className="text-white/90 hover:text-white font-bold text-sm uppercase tracking-wider transition-colors"
+              className="text-amber-400 hover:text-amber-300 font-bold text-sm uppercase tracking-wider transition-colors"
             >
               Sign In
             </button>
@@ -113,7 +113,7 @@ const Home = () => {
           <div className="md:hidden absolute top-20 left-0 right-0 bg-indigo-600 z-50 p-6 space-y-4">
             <button
               onClick={() => navigate("/login")}
-              className="block w-full text-left text-white font-bold uppercase tracking-wider py-2"
+              className="block w-full text-left text-amber-400 hover:text-amber-200 font-bold uppercase tracking-wider py-2 transition-colors"
             >
               Sign In
             </button>
@@ -155,7 +155,7 @@ const Home = () => {
                 onClick={() => navigate("/login")}
                 size="lg" 
                 variant="secondary"
-                className="px-12 py-4 text-lg font-black border-white/30 text-white hover:bg-white/10"
+                className="px-12 py-4 text-lg font-black border-amber-400 text-amber-400 hover:bg-amber-400 hover:text-indigo-900"
               >
                 Sign In to Apply
               </Button>
@@ -227,7 +227,7 @@ const Home = () => {
               onClick={() => navigate("/login")}
               variant="secondary"
               size="lg"
-              className="border-white/30 text-white hover:bg-white/10"
+              className="border-amber-400 text-amber-400 hover:bg-amber-400 hover:text-indigo-900"
             >
               Sign In
             </Button>

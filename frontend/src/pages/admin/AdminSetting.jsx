@@ -226,7 +226,7 @@ const AdminSetting = () => {
                     onChange={handleChange}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
                   >
-                    <option>INR (₹)</option>
+                    <option>NPR (रु)</option>
                     <option>USD ($)</option>
                     <option>EUR (€)</option>
                   </select>
